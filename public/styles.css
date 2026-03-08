@@ -1,0 +1,278 @@
+:root {
+  --bs-primary: #007bff;
+  /* --bs-secondary: #6c757d;
+  --bs-success: #28a745;
+  --bs-info: #17a2b8;
+  --bs-warning: #ffc107;
+  --bs-danger: #dc3545;
+  --bs-light: #f8f9fa;
+  --bs-dark: #343a40; */
+
+  /* Header watchlist, reservations, ... */
+  --col01: #8ec3f8;
+
+  /*  */
+  --col02: #7eaafb;
+
+  /*body */
+  --col03: #cee3f6;
+
+  /* */
+  --col04: #ebfbfbdc;
+
+
+  /*  Button  */
+  --colB0: #d0ccccab;
+
+  /* Button: vorgemerkt */
+  --colB1: #fbf277;
+
+  /* Button: ausgeliehen, vormerkbar */
+  --colB2: #cbf3cb;
+
+  /* Button: jetzt ausleihbar*/
+  --colB3: #f89eae;
+
+  /* Button: in Cassis  */
+  --colB4: #c6f7f7dc;
+
+  /* Button: waitlist  */
+  --colB5: #bcfbfa;
+
+
+  /* Text-Hervorhebungen */
+  --col10: #f0fbd0;
+  --col11: #f8e9d0;
+}
+
+body {
+  background-color: var(--col03);
+}
+
+.loginbutton {
+  padding: 8px 16px;
+  margin-top: 16px;
+  font-size: 18px;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  height: 40px;
+  width: 100%;
+}
+
+#tab-header button.active {
+  color: var(--bs-light);
+  background-color: var(--bs-primary);
+}
+
+.edit-container .form-row {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.edit-container .form-group {
+  padding-right: 15px;
+  padding-left: 15px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+#buttonbar button #buttonbar2 button {
+  width: 60px;
+}
+
+textarea.form-control {
+  min-height: 80px;
+  resize: vertical;
+}
+
+select.form-control {
+  height: 38px;
+}
+
+.table th {
+  vertical-align: middle !important;
+}
+
+.table td {
+  vertical-align: top !important;
+}
+
+.statusCell {
+  background-color: var(--col1);
+  text-align: center;
+  font-weight: bold;
+  color: #333;
+  width: 30px;
+  /* height: 30px; */
+}
+
+/*
+ nicht gefunden - in "Erledigt" - "Erledigt" ...*/
+.statusCell[value="+"],
+.statusCell[value="!"],
+.statusCell[value=">"],
+.statusCell[value="x"] {
+  background-color: var(--colB0) !important;
+}
+
+.statusCell[value="="] {
+  /* ausgeliehen, vormerkbar */
+  background-color: var(--colB2) !important;
+}
+
+.statusCell[value="#"] {
+  /* vorgemerkt */
+  background-color: var(--colB1) !important;
+}
+
+.statusCell[value="*"] {
+  /* jetzt ausleihbar */
+  background-color: var(--colB3) !important;
+}
+
+.statusCell[value="^"] {
+  /* in Cassis */
+  background-color: var(--colB4) !important;
+}
+
+.statusCell[value="-"] {
+  /* in waitlist */
+  background-color: var(--colB5) !important;
+}
+
+.searchStringCell,
+.standardCell {
+  position: relative;
+}
+
+.marked {
+  border-left: 8px solid var(--bs-primary)
+}
+
+.statusBox,
+.typebox,
+.datebox {
+  position: absolute;
+  bottom: 0px;
+  font-size: 11px;
+  padding: 2px;
+}
+
+.statusBox {
+  left: 0px;
+  top: 0px;
+}
+
+.datebox {
+  right: 0px;
+  height: 30px;
+}
+
+.typebox {
+  left: 0px;
+  height: 20px;
+  background-color: var(--col10) !important;
+  z-index: 50;
+}
+
+.typebox.newEntry {
+  background-color: var(--col11) !important;
+}
+
+tr.CASSIS .kennungCell {
+  color: white !important;
+  background-color: var(--col02) !important;
+}
+
+.CASSIS td {
+  background-color: var(--col04) !important;
+}
+
+.prio {
+  /*  font-weight: 640 !important; */
+  /* color: white !important;*/
+  background-color: var(--col03) !important;
+}
+
+#mediaType.watchlist,
+td.watchlist,
+.watchlist th,
+#mediaType.reservations,
+td.reservations,
+.reservations th,
+#mediaType.donelist,
+td.donelist,
+.donelist th,
+.resultlist th,
+.waitlist th {
+  background-color: var(--col01) !important;
+}
+
+
+.watchlist th,
+.reservations th,
+.resultlist th,
+.donelist th {
+  max-width: 100px
+}
+
+tbody tr:hover td {
+  background-color: rgb(255, 251, 216);
+  /* rgb(224, 235, 249); */
+  /* rgba(180, 180, 180, 0.3); */
+  /* Transparentes Hellgrau */
+  transition: background-color 0.2s ease;
+  /* Optional: Sanfter Übergang */
+}
+
+.toast {
+  position: fixed;
+  top: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 80%;
+  z-index: 1100;
+}
+
+.spin-animation {
+  display: inline-block;
+  margin-left: 8px;
+  animation: spin 1s linear infinite;
+  /* Browser-Prefixes für maximale Kompatibilität */
+  -webkit-animation: spin 1s linear infinite;
+  -moz-animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+#search_kennung .btn-check:checked+.btn-outline-primary {
+  background-color: var(--bs-light);
+  border-color: var(--bs-light);
+  color: lightgrey;
+}
+
+.marked {
+  background-color: var(--col10) !important;
+}
+
+.pointer {
+  cursor: pointer;
+}
+
+.center {
+  text-align: center;
+}
+
+#logo-button {
+  background: url("../logo-grau.png") no-repeat left center;
+  background-size: 40px 40px;
+}

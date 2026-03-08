@@ -1,0 +1,120 @@
+#item_panel(style="max-width: 744px; margin: auto;")
+
+  .edit-container.px-0.pb-0
+              
+      .card.my-2
+        .card-header.py-2
+          .row.align-items-center
+            .col-4.text-start.p-0
+              button.btn.btn-sm.btn-outline-secondary.ms-1(title="Fertig" onclick="closeItemMenu()")
+                i.bi.bi-x-lg(style="font-size: 18px")  
+
+            .col-4.text-center.p-0
+              h5.mb-0= (item.mediaType || 'eBook')
+
+            .col-4.text-end.p-0
+              button.btn.btn-sm.btn-outline-secondary(title="gehe zum Listeneintrag" id="gotoTarget" onclick=`gotoTarget('${data.targetId}', '${data.listpath}')`)
+                i.bi.bi-arrow-90deg-down(style="font-size: 18px")
+
+              if item.mediaData && item.mediaData.mediaRef
+                a#logo-button.btn.btn-sm.btn-outline-secondary.ms-2(style="width:36px; height: 36px" href=data.url target="_blank" rel="noopener noreferrer") 
+              else 
+                #logo-button
+
+        .card-body.align-items-center.p-2
+          .row.pb-1
+            .col-6.d-flex
+              input#status.form-control.text-center.statusCell.me-2(type="text" style="width:40px"
+                readonly title="Status" value=item.status)
+
+              input#kennung.text-primary.border-primary.form-control.text-center(type="text" readonly style="width: 70px" 
+                title="Kennung" value=item.kennung)
+
+            .col-6.d-flex.align-justify-end
+              input#mediaType.form-control.text-center(type="text" readonly class=item.listType || '' style="min-width: 80px"
+                title="Media-Typ" value=data.displayListType)
+
+          .row.pb-1
+            .col-6
+              label(for="received") Im Bestand seit:
+            .col-6
+              input#received.form-control.text-center.border-primary(type="text" readonly
+                value=(item.mediaData) ? item.mediaData.received : 'N/A')
+
+          .row.pb-1
+            .col-6
+              label(for="datum") Verfügbar ab:
+            .col-6
+              if item.listType == 'reservations'
+                input#datum.form-control.text-center.border-primary(type="text" value=item.datum 
+                  onChange=`changeItem('${item._id}', '${data.targetId}')`
+                )
+              else
+                input#datum.form-control.text-center.border-primary(type="text" readonly value=item.datum)
+
+          .row.pb-1
+            .col-6
+              label(for="lastUpdated") Letzte Aktualisierung:
+            .col-6
+              input#lastUpdated.form-control.text-center.border-primary(type="text" readonly value=(formatDate(item.lastUpdated) || "NA"))
+
+          .row.pb-0
+            .col-6
+                label(for="searchString") Abfragestring:
+            .col-6
+              .text-end
+                span#searchStringfeedback.me-2.small.text-primary
+                span.text-primary(type="button" onclick="toClipboard('searchString', 'searchStringfeedback')")
+                  i.bi.bi-copy
+
+          .row.pb-1.pt-0
+            .col-12
+              textarea#searchString.form-control.border-primary(name="searchString" rows="2"
+                onChange=`changeItem('${item._id}', '${data.targetId}')`
+              )= item.searchString
+
+          .row.pb-2.d-none
+            .col-6
+            .col-4
+              label(for="priobox") Priorität: 
+            .col-2
+              .text-end
+                .form-check.form-switch
+                  input#priobox.form-check-input.border-primary(type="checkbox" 
+                    onChange=`changeItem('${item._id}', '${data.targetId}')` checked=item.prio)
+                  label.form-check-label(for="prio")         
+
+          #buttonbar
+            .d-flex.justify-content-center
+
+              if item.listType === 'watchlist'
+                button.btn.btn-sm.btn-primary.m-1(title="Aktualisieren & Speichern" 
+                  onclick=`updateItem(${JSON.stringify(item).replaceAll("'", "\\'")}, '${data.targetId}')`
+                ) Aktualisieren
+                button.btn.btn-sm.btn-primary.m-1(title="zu Vormerkungen" 
+                  onclick=`setItemReserved('${item._id}', '${data.targetId}')`
+                ) Vormerkung
+                button.btn.btn-sm.btn-primary.m-1(title="zu Erledigt" 
+                  onclick=`setItemDone('${item._id}', '${data.targetId}')`
+                ) Erledigt
+
+              if item.listType === 'reservations'
+                button.btn.btn-sm.btn-primary.m-1(title="Vormerkung löschen" 
+                  onclick=`setItemActive('${item._id}', '${data.targetId}')`
+                ) Vormerkung löschen
+                button.btn.btn-sm.btn-primary.m-1(title="zu Erledigt" 
+                  onclick=`setItemDone('${item._id}', '${data.targetId}')`
+                ) Erledigt       
+
+              if item.listType === 'donelist'
+                button.btn.btn-sm.btn-primary.m-1(title="Zurück in die Merkliste" 
+                  onclick=`setItemActive('${item._id}', '${data.targetId}')`
+                ) Zurück in die Merkliste
+                button.btn.btn-sm.btn-primary.m-1(title="Löschen" 
+                  onclick=`deleteItem('${item._id}', '${item.searchString.replaceAll("'", "\\'")}', '${data.targetId}')`
+                ) Löschen
+
+              if !item.listType 
+                button.btn.btn-sm.btn-primary.m-1(title="Importieren" 
+                  onclick=`importItem(${JSON.stringify(item).replaceAll("'", "\\'")}, '${data.targetId}')`
+                ) Importieren

@@ -1,0 +1,81 @@
+table#resultlist.table.table-stripedxxx
+  thead
+    tr 
+      th(colspan=2).align-items-center.p-0
+        .d-flex
+          .col-2.text-start
+            button.btn.btn-sm.btn-outline-secondary.m-1(title="Schließen" onclick="closeTableContainer()")
+              i.bi.bi-x-lg(style="font-size: 18px")
+
+          .col-8.text-center
+            span.fs-5= 'Suchergebnisse' + ' ['
+              span#filterLength= results.length
+              span /
+              span#waitlistLength= results.length
+              span= ']'  
+
+          .col-2.text-end
+            button.btn.btn-sm.btn-outline-secondary.m-1(title="Aktualisieren" onclick="fullSearch()")
+              i.bi.bi-arrow-clockwise(style="font-size: 18px")
+
+    tr.info.resultlist
+      th.p-0
+        table(style="width: 100%")
+          tr
+            th.center.px-2 St
+            th.center.px-2 Bibl
+          tr 
+            th.center.px-2(colspan=2) verfügbar
+
+      th.center.p-0
+        .d-flex.gap-2.justify-content-between
+          .m-auto Autor; Titel
+          button.btn.btn-sm.btn-secondary.m-1(title="CASSIS ein/aus" onclick="toggleCassis()") 
+            i.bi.bi-chevron-up(style="font-size: 18px") 
+
+  tbody
+    each item, index in results
+      tr.pointer.itemrow(id=`result_${index}` class=`${item.kennung}` 
+        onclick=`openItemMenu(${JSON.stringify(item)}, 'result_${index}')`
+      )
+        td.standardCell.p-0.m-0(style='max-width: 100px; background-color: #e4e3e3ff !important')
+          table.inner-table.center
+            tr
+              td.statusCell(value=item.status)= item.status || '-'
+              td.kennungCell.text-primary(style="width: 50px")= item.kennung
+            tr
+              td.standardCell(colspan=2 style="font-size: 14px"
+              )= (listType !== 'reservations' && listType !== 'donelist') ? (item.datum || '-') : ''
+
+        td.standardCell.px-1.pt-0.pb-4.pt-0(style='min-width: 200px' 
+          class=`${item.kennung}`
+        )
+          span.itemText(class=(item.prio) ? "prio" : "")= `${item.searchString} `
+          if item.series_name
+            span= `[${item.series_name} ${item.series_index}]`
+          
+          if item.kennung !== "CASSIS"
+            .typebox.text-primary.py-0.px-1(
+              class=`${ (daysFromToday(item.mediaData.received) <= 14) ? "newEntry" : ""}`)
+              p= `${item.mediaType} - `
+                span.receivedDate= `${item.mediaData.received}`
+
+          .datebox.text-primary.pb-0.mb-0
+            p= formatDate(item.lastUpdated)     
+              if item._id
+                if item.status === "x" || item.status === ">"
+                  span.m-2(title='Löschen' 
+                    onclick=`deleteItem('${item._id}', '${item.searchString.replaceAll("'", "\\'")}', 'result_${index}', event)`
+                  )
+                    i.bi.bi-trash(style="font-size: 20px")
+                else
+                  span.m-2(title='Erledigt' 
+                    onclick=`setItemDone('${item._id}', 'result_${index}', event)`
+                  )
+                    i.bi.bi-check2-square(style="font-size: 20px")
+              else
+                if item.status === "=" || item.status === "*"
+                  span.m-2(title='Importieren' 
+                    onclick=`importItem(${JSON.stringify(item).replaceAll("'", "\\'")}, 'result_${index}', event)`
+                  )
+                    i.bi.bi-box-arrow-in-down-right.text-bg-primary(style="font-size: 20px")

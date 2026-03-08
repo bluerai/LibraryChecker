@@ -1,0 +1,33 @@
+form(id="loginForm")
+  div(style="margin-left: auto;margin-right: auto; margin-top: 50px;")
+    table(style="margin: auto; border-collapse: collapse;")
+      tr(style="height: 50px")
+        th(colspan="2") 
+          if (first_login)
+            p Bitte registrieren:
+          else
+            p Bitte anmelden:
+      tr(style="height: 48px")
+        td(style="width:100px")
+          label(for="username") Name: 
+        td
+          if (first_login) 
+            input.border-primary(type="text" id="username" name="username" value="", required)
+          else
+            input.border-primary(type="text" id="username" name="username" value="", required)
+      tr(style="height: 48px")
+        td(style="width:100px")
+          label(for="password") Passwort: 
+        td
+          input.border-primary(type="password" id="password" name="password" value="", required)
+
+      if (first_login)
+        tr(style="height: 48px")
+          td(style="width:100px")
+            label(for="password2") Passwort bestätigen: 
+          td
+            input.border-primary(type="password" id="password2" name="password2" value="", required)
+      tr(style="height: 48px")
+        td(colspan="2" style="text-align: center")
+          .loginbutton.border.text-bg-primary(type="submit" onClick=`login(${first_login})`) Anmelden
+      

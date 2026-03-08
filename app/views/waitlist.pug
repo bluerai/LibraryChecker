@@ -1,0 +1,64 @@
+
+table.table.table-sm.table-striped.mt-1
+  thead
+    tr 
+      th(colspan=2).align-items-center.p-0
+        .d-flex
+          .col-2.text-start
+            button.btn.btn-sm.btn-outline-secondary.m-1(title="Schließen" onclick="closeTableContainer()")
+              i.bi.bi-x-lg(style="font-size: 18px")
+
+          .col-8.text-center
+            span.fs-5= listTitle + ' ['
+              span#filterLength= items.length
+              span /
+              span#waitlistLength= items.length
+              span= ']'  
+
+          .col-2.text-end
+            button.btn.btn-sm.btn-outline-secondary.m-1(title="Aktualisieren" onclick="updateWaitlist()")
+              i.bi.bi-arrow-clockwise(style="font-size: 18px")
+
+    tr.info.waitlist
+      th.p-0
+        table(style="width:100%")
+          tr
+            th.center.px-2 St
+            th.center.px-2 Bibl
+          tr
+            th.center.p-2(colspan=2) verfügbar
+                        
+      th.center.p-0
+        .d-flex.gap-2.justify-content-between
+          .m-auto Autor; Titel
+          button#openFilterModal.btn.btn-secondary(
+            type="button"
+            data-bs-toggle="modal"
+            data-bs-target="#searchModal"
+            title="Filtern"
+          ) 
+            i.bi.bi-funnel(style="font-size: 18px")
+      
+  tbody
+    each item, index in items
+      tr.pointer.itemrow(id=`search_${index}` onclick=`openSearchTab(${JSON.stringify(item)}, false)`)
+
+        td.standardCell.p-0.m-0(style='background-color: #e4e3e3ff !important')
+       
+          table.inner-table.center(style="width: 100%; height: 100%")
+            tr
+              td.statusCell(value=item.status || '-')= item.status || '-'
+              td.kennungCell.text-primary(style="min-width: 50px")= item.kennungen.join(", ")
+            tr
+              td.standardCell(colspan=2 style="font-size: 14px")= item.targetDate
+
+        td.standardCell.px-1.pt-0.pb-4.m-0(style='min-width: 200px')
+          span.itemText= item.searchString
+
+          .typebox.text-primary.py-0.px-1
+              p= `${item.mediaType}`
+
+          .datebox.text-primary.pb-0.mb-0
+            span.m-2(onclick=`deleteSearchItem('${item._id}', '${item.searchString}', 'search_${index}', event)`)
+              i.bi.bi-trash(style="font-size: 20px")
+

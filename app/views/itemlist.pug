@@ -1,0 +1,109 @@
+table.table.table-striped
+  thead
+    
+    tr 
+      th(colspan=4).align-items-center.p-0
+        .d-flex
+          .col-2.text-start
+            button.btn.btn-sm.btn-outline-secondary.m-1(title="Schließen" onclick="closeTableContainer()")
+              i.bi.bi-x-lg(style="font-size: 18px")
+
+          .col-8.text-center
+            span.fs-5= listTitle + ' ['
+              span#filterLength= selectedList.length
+              span /
+              span#listLength= selectedList.length
+              span= ']'  
+
+          .col-2.text-end
+            button.btn.btn-sm.btn-outline-secondary.m-1(title="neu laden" onclick="reloadList()")
+              i.bi.bi-arrow-clockwise(style="font-size: 18px")
+
+    tr.info(class=listType)
+      th.py-0
+        table
+          tr
+            th.pointer.p-0(title="Status"
+              onclick=`getList({listType: '${listType}', kennung: '${selectedKennung}', sort: 'status', dir: '${sortField === "status"  ? sortDirection : ""}'})`
+              class=sortField === 'status' ? `sorted-${sortDirection}` : ''
+            )
+              .mx-1 St
+
+            th.pointer.p-0(title="Bibliothek"
+              onclick=`getList({listType: '${listType}', kennung: '${selectedKennung}', sort: 'kennung', dir: '${sortField === "kennung"  ? sortDirection : ""}'})`
+              class=sortField === 'kennung' ? `sorted-${sortDirection}` : ''
+            ) 
+              .mx-2 Bibl
+
+          if listType === 'watchlist'
+            tr.h-0
+              th.pointer.p-0(title="Verfügbarkeitsdatum"
+                colspan=2
+                onclick=`getList({listType: '${listType}', kennung: '${selectedKennung}', sort: 'datum', dir: '${sortField === "datum"  ? sortDirection : ""}'})`
+                class=sortField === 'datum' ? `sorted-${sortDirection}` : ''
+              ) verfügbar
+
+      th.py-0
+        .d-flex.gap-2.justify-content-between
+          .m-auto( onclick=`getList({listType: '${listType}', kennung: '${selectedKennung}', sort: 'searchString', dir: '${sortField === "searchString"  ? sortDirection : ""}'})`
+            class=sortField === 'searchString' ? `sorted-${sortDirection}` : ''
+          ) Autor; Titel
+          button#openFilterModal.btn.btn-secondary(
+            type="button"
+            data-bs-toggle="modal"
+            data-bs-target="#searchModal"
+            title="Filtern"
+          ) 
+            i.bi.bi-funnel(style="font-size: 18px")
+
+          .dropdown
+            button.btn.btn-secondary.dropdown-toggle(type="button" data-bs-toggle="dropdown" title="Sortieren")
+              i.bi.bi-arrow-down-up(style="font-size: 18px")
+            ul.dropdown-menu
+              li#sortModDate(onclick = `getList({listType: '${listType}', kennung: '${selectedKennung}', sort: 'lastUpdated', dir: '${sortField === "lastUpdated" ? sortDirection : "asc"}'})`)
+                .dropdown-item nach Änderungsdatum
+              li#sortAvailDate(onclick = `getList({listType: '${listType}', kennung: '${selectedKennung}', sort: 'datum', dir: '${sortField === "datum" ? sortDirection : "desc"}'})`)
+                .dropdown-item nach Verfügbarkeitsdatum
+              li#sortInsDate(onclick = `getList({listType: '${listType}', kennung: '${selectedKennung}', sort: 'mediaData.received', dir: '${sortField === "mediaData.received" ? sortDirection : "asc"}'})`)
+                .dropdown-item nach Einstelldatum
+              li#sortInsDate(onclick = `getList({listType: '${listType}', kennung: '${selectedKennung}', sort: 'mediaData.author', dir: '${sortField === "mediaData.author" ? sortDirection : "desc"}'})`)
+                .dropdown-item nach Autor
+              li#sortInsDate(onclick = `getList({listType: '${listType}', kennung: '${selectedKennung}', sort: 'mediaData.title', dir: '${sortField === "mediaData.title" ? sortDirection : "desc"}'})`)
+                .dropdown-item nach Titel
+
+  tbody
+    each item,index in selectedList
+      tr.pointer.itemrow(id=`item_${index}` class=`${item.kennung}` name="itemrow"
+        onclick=`openItemMenu(${JSON.stringify(item)}, 'item_${index}')`
+      )
+        td.standardCell.p-0.m-0(style='max-width: 90px; background-color: #e4e3e3ff !important')
+          table.inner-table.center
+            tr
+              td.statusCell(value=item.status)= item.status || '-'
+              td.kennungCell.text-primary(style="width: 50px")= item.kennung
+            tr
+              td.standardCell(colspan=2 style="font-size: 12px"
+              )= (listType !== 'donelist') ? (item.datum || '-') : ''
+
+        td.searchStringCell.px-1.pt-0.pb-4.m-0(colspan=3 style='min-width: 200px')
+          span.itemText(class=(item.prio) ? "prio" : "")= item.searchString
+
+          if item._id
+            .typebox.text-primary.py-0.px-1(
+              class=`${ (item.received && daysFromToday(item.received) <= 14) ? "newEntry" : ""}`)
+              p= `${item.mediaType} - `
+                span.receivedDate= `${item.received}`
+
+          .datebox.text-primary.pb-0.mb-0
+            p= formatDate(item.lastUpdated)
+              if item._id
+                if item.status === "x" || item.status === ">"
+                  span.m-2(title='Löschen' 
+                    onclick=`deleteItem('${item._id}', '${item.searchString.replaceAll("'", "\\'")}', 'item_${index}', event)`
+                  )
+                    i.bi.bi-trash(style="font-size:18px")
+                else
+                  span.m-2(title='Erledigt' onclick=`setItemDone('${item._id}', 'item_${index}', event)`)
+                    i.bi.bi-check2-square(style="font-size: 20px")                    
+
+

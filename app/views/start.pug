@@ -1,0 +1,380 @@
+doctype html
+html(lang="de")
+  head
+
+    meta(charset="UTF-8")
+
+    meta(name="mobile-web-app-capable" content="yes")
+    meta(name="apple-mobile-web-app-capable" content="yes")
+    meta(name="apple-mobile-web-app-status-bar-style" content="translucent black")
+
+    meta(name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width")
+    meta(name="viewport" id="vp" content="initial-scale=1.0,user-scalable=no,maximum-scale=1")
+
+    title Library Checker
+
+    link(rel="stylesheet" href="/css/bootstrap.min.css")
+    script(src="/js/bootstrap.bundle.min.js")
+    link(rel="stylesheet" href="/icons/bootstrap-icons.css")
+
+    link(rel="stylesheet" href="/styles.css")
+
+    link(rel="icon" type="image/x-icon" href="/favicon.ico")
+    link(rel="icon" type="image/x-icon" href="/apple-touch-icon.png")
+    link(rel="apple-touch-icon" href="/apple-touch-icon.png")
+
+    script(src="/app.js")
+  body
+    .container-fluid.mt-1(style="max-width: 768px; margin: auto;")
+
+      #login
+
+      #app(style="display: none")
+        .container-fluid.mb-2
+          .row.align-items-center
+            .col-4.text-start.p-0
+              img.menu.left(style="height: 36px; width: 36px" src="/apple-touch-icon.png" onclick="reload()" 
+                title="Neu laden" aria-hidden="true")
+
+            .col-4.text-center.p-0.fs-5 CheckLib
+
+            .col-4.text-end.p-0
+              button#onlSearchButton.btn.btn-sm.btn-secondary(onclick="toggleTab('searchTab')")
+                i.bi.bi-search(style="font-size: 18px")
+              button.btn.btn-sm.btn-secondary.ms-2(onclick="toggleTab('serviceTab')")
+                i.bi.bi-three-dots(style="font-size: 18px")
+
+        #header_panel.mt-2
+
+          #searchTab.tab-content.mb-2(style="display: none;")
+            .newEntry-form.mb-2
+
+              .card.mb-2
+                .card-header#buttonbar2
+                  .row.align-items-center
+                    .col-4.text-start.p-0
+                      button.btn.btn-sm.btn-outline-secondary(title="Schließen" onclick="toggleTab()")
+                        i.bi.bi-x-lg(style="font-size: 18px")
+
+                    .col-4.text-center.p-0                          
+                      h5.mb-0 Online-Suche
+
+                    .col-4.text-end.p-0                 
+                        button.btn.btn-sm.btn-outline-secondary.ms-2(title="neue Suche" onclick="newSearchTab()")
+                          i.bi.bi-arrow-clockwise(style="font-size: 18px")
+
+                .card-body
+                  .form#newEntryForm 
+                    
+                    .row.d-flex.align-items-center.mb-2
+                      .col-3
+                        label.form-label(for="mediaType") Mediatype:
+                      .col-9.mb-2
+                        select#mediaType.border-primary.form-select
+                          each key in Object.keys(mediaTypes)
+                            option(value=key selected=(value === "eBook"))= key                     
+
+                    .row.d-flex.align-items-center.mb-3
+                      .col-3
+                        label.form-label.me-2(for="search_kennung") Bibliothek:
+                      .col-9               
+                        .btn-group#search_kennung(role="group")
+                          input.btn-check(type="checkbox" name="search_kennung" value="DÜS" id="search_dus" autocomplete="off")
+                          label.btn.btn-outline-primary(for="search_dus") DÜS
+                          //-input.btn-check(type="checkbox" name="search_kennung" value="HEiSS" id="search_hess" autocomplete="off")
+                          //-label.btn.btn-outline-primary(for="search_hess") HEiSS
+                          input.btn-check(type="checkbox" name="search_kennung" value="GOET" id="search_goet" autocomplete="off")
+                          label.btn.btn-outline-primary(for="search_goet") GOET
+                          input.btn-check(type="checkbox" name="search_kennung" value="THÜR" id="search_thur" autocomplete="off")
+                          label.btn.btn-outline-primary(for="search_thur") THÜR                
+
+                    .row.d-flex.justify-content-center
+                      .col-4
+                        .text-start
+                          label.form-label(for="fullSearchString") Suchstring:
+                      .col-8
+                        .text-end
+                          span#fullSearchStringfeedback.me-2.small.text-primary
+                          span.text-primary(type="button" onclick="toClipboard('fullSearchString', 'fullSearchStringfeedback')")
+                            i.bi.bi-copy
+
+                    .row
+                      .col-12
+                        textarea#fullSearchString.mb-2.form-control.border-primary(rows="2" placeholder="Suchstring eingeben..." required)
+
+                    .row.d-flex.align-items-center.mb-2
+                      .col-10
+                        label.form-check-label.me-2.my-2(for="extendedMode") Auch in Onleihe-Beschreibungen suchen:   
+                      .col-2.justify-content-end
+                        .form-check.form-switch
+                          input#extendedMode.form-check-input.border-primary(type="checkbox" name="extended")
+                          label.form-check-label(for="extendedMode")   
+                          
+                    .row.align-items-center
+                      .col-2
+
+                      .col-8.d-flex.justify-content-center       
+                        button.btn.btn-sm.btn-primary(type="button" style="width: 200px" onclick="fullSearch()") Suchen
+
+                .card-footer.statusmsg.text-primary(style="display: none")
+
+              .card
+                .card-body
+                  .row.align-items-center
+                    .col-6
+                      label.form-label.me-2(for="targetDate") Starttermin der Abfrage:
+                    .col-6
+                      input#targetDate.form-control.border.border-primary.text-center(type="date")
+                    
+                  .row.mt-4
+                    .col12.d-flex.justify-content-center   
+                      button.btn.btn-sm.btn-primary(title="Speichern" onclick="saveSearchItem()" style="width: 200px") Abfrage speichern
+                                      
+            #results-container
+
+          #serviceTab.tab-content.mb-2(style="display: none;")   
+
+            .upload-form.mb-2
+              .card.mb-2#bulkUpdate
+                .card-header(onClick="toggleCardBody(this)")
+                  h5.mb-0 Daten aktualisieren
+                    i.bi.bi-caret-down-fill.text-primary
+
+                .card-body(style="display: none")
+                  .row.d-flex.align-items-center
+                    .col-6
+                        label.form-label.center(for="daysInput") Tage: 
+                          input#daysInput.form-control.d-inline-block.center(type="number" min="1" value="7" style="width: 88px")
+                        p Datensätze aktualisieren, die nicht in der letzten Stunde geändert wurden.  
+    
+                    .col-6.text-end
+                      button.btn.btn-primary(onclick="bulkUpdate()") Jetzt starten
+                        
+                .card-footer.statusmsg.text-primary(style="display: none")
+
+              .card.mb-2#importQueryData
+                .card-header(onClick="toggleCardBody(this)")
+                  h5.mb-0.text-start Daten online abfragen 
+                    i.bi.bi-caret-down-fill.text-primary
+
+                .card-body(style="display: none")
+                  .row.d-flex.align-items-center.mb-4
+                    .col-6
+                      label.form-label(for="kennung") Bibliothek:
+                    .col-6
+                      .btn-group(role="group")
+                        input.btn-check(type="radio" name="kennung" value="DÜS" id="dus" autocomplete="off")
+                        label.btn.btn-outline-primary(for="dus") DÜS
+                        //-input.btn-check(type="radio" name="kennung" value="HEiSS" id="hess" autocomplete="off")
+                        //-label.btn.btn-outline-primary(for="hess") HEiSS
+                        input.btn-check(type="radio" name="kennung" value="GOET" id="goet" autocomplete="off")
+                        label.btn.btn-outline-primary(for="goet") GOET
+                        input.btn-check(type="radio" name="kennung" value="THÜR" id="thur" autocomplete="off")
+                        label.btn.btn-outline-primary(for="thur") THÜR
+
+                  .row.d-flex.align-items-center.mb-4
+                    .col-6         
+                      label.form-label(for="count") Anzahl zu ladener Datensätze (in Reihenfolge der Neuzugänge):
+                    .col-6         
+                      .btn-group(role="group")
+                        each val in [20, 50, 100, 200, 300]
+                          input.btn-check(type="radio" name="count" value=val id=`q${val}`)
+                          label.btn.btn-outline-primary(for=`q${val}`)= val
+                  
+                  .text-end
+                    button.btn.btn-primary(onclick="importQueryData()") Abfrage starten
+
+                .card-footer.statusmsg.text-primary(style="display: none")
+
+
+              form(method="POST" action="/upload/json" enctype="multipart/form-data" id='jsonUploadForm')
+                .card.mb-2#importJsonData
+                  .card-header(onClick="toggleCardBody(this)")
+                    h5.mb-0.text-start Daten aus JSON-Datei laden 
+                      i.bi.bi-caret-down-fill.text-primary
+
+                  .card-body(style="display: none")
+                    .row.d-flex.align-items-center.mb-4
+                      .col-6
+                        label.form-label(for="kennung") Bibliothek:
+                      .col-6
+                        .btn-group(role="group")
+                          input.btn-check(type="radio" name="kennung" value="DÜS" id="dus1" autocomplete="off")
+                          label.btn.btn-outline-primary(for="dus1") DÜS
+                          input.btn-check(type="radio" name="kennung" value="HESS" id="hess1" autocomplete="off")
+                          label.btn.btn-outline-primary(for="hess1") HESS
+                          input.btn-check(type="radio" name="kennung" value="GOET" id="goet1" autocomplete="off")
+                          label.btn.btn-outline-primary(for="goet1") GOET
+                          input.btn-check(type="radio" name="kennung" value="THÜR" id="thur1" autocomplete="off")
+                          label.btn.btn-outline-primary(for="thur1") THÜR
+
+                    .mb-3
+                        label.form-label(for="jsonListFile") Importdatei (.json)
+                        input.form-control(type="file" name="jsonListFile" id="jsonlistFile" accept=".json" required)
+
+                    .text-end
+                      button.btn.btn-primary(type="submit") Aus JSON-Datei laden
+
+                  .card-footer.mb-2.statusmsg.text-primary(style="display: none")
+                script.
+                  jsonImportEventListener()
+
+
+              form(method="POST" action="/upload/html" enctype="multipart/form-data" id='uploadForm')
+                .card.mb-2#fileImport
+                  .card-header(onClick="toggleCardBody(this)")
+                    h5.mb-0.text-start Daten aus HTML-Datei laden
+                      i.bi.bi-caret-down-fill.text-primary
+                  .card-body(style="display: none")
+                    .mb-3
+                      label.form-label(for="searchlistFile") Importdatei (.html)
+                      input.form-control(type="file" name="searchlistFile" id="searchlistFile" accept=".html" required)
+
+                    .text-end
+                      button.btn.btn-primary(type="submit") Daten laden
+                  .card-footer.statusmsg.text-primary(style="display: none")
+                script.
+                  fileImportEventListener()
+        
+            .card.mb-2#bulkClearance
+              .card-header(onClick="toggleCardBody(this)")
+                h5.mb-0 Aufräumen
+                  i.bi.bi-caret-down-fill.text-primary 
+
+              .card-body(style="display: none")
+                .row.align-items-center
+                  .col-6 Überflüssige Einträge aus den Listen entfernen
+                  .col-6.text-end
+                    button.btn.btn-primary(onclick="bulkClearance()") Aufräumen
+
+              .card-footer.statusmsg.text-primary(style="display: none")
+
+            .card.mb-2#createBackup
+              .card-header(onClick="toggleCardBody(this)")
+                h5.mb-0.text-start Backup
+                  i.bi.bi-caret-down-fill.text-primary
+              .card-body.row.align-items-center(style="display: none")
+                .text-center
+                  button.btn.btn-primary#createBackupBtn Backup erstellen
+              .card-footer.statusmsg.text-primary(style="display: none")
+
+            .card.mb-2#adminBackups
+              .card-header(onClick="toggleCardBody(this)")
+                h5.mb-0.text-start Backups verwalten
+                  i.bi.bi-caret-down-fill.text-primary
+              .card-body(style="display: none")
+                .table-responsive
+                  table.table.table-hover
+                    thead
+                      tr
+                        th(style="width: 40%") Dateiname
+                        th(style="width: 20%") Größe
+                        th(style="width: 20%") Datum
+                        th(style="width: 20%") Aktionen
+                    tbody#backupList
+                      tr
+                        td(colspan="4").text-center
+                          .spinner-border.text-primary(role="status")
+                            span.visually-hidden Lädt...  
+
+          //- Modal für Restore Bestätigung
+          #restoreModal.modal.fade(tabindex="-1")
+            .modal-dialog.modal-dialog-centered
+              .modal-content
+                .modal-header.bg-primary.text-white
+                  h5.modal-title Backup wiederherstellen
+                  button.btn-close.btn-close-white(type="button" data-bs-dismiss="modal")
+                .modal-body
+                  p Wollen Sie das Backup 
+                    strong#restoreBackupName 
+                    |   wirklich wiederherstellen?
+                  p.text-danger Alle aktuellen Daten werden überschrieben!
+                .modal-footer
+                  button.btn.btn-secondary(type="button" data-bs-dismiss="modal") Abbrechen
+                  button.btn.btn-danger#confirmRestoreBtn(type="button") Wiederherstellen
+
+        #item_panel
+
+        #itemlist_panel
+
+          //- Button-Leiste
+          .d-flex#listButtons.flex-wrap.mb-2.justify-content-between.bg-light.border.p-1.m-0
+            a#waitlist.btn.btn-outline-primary.px-1(
+              style="font-size: 14px" onclick="getWaitlist()"
+            ) Warteliste
+
+            .dropdown
+              a#watchlist.btn.btn-outline-primary.dropdown-toggle.px-1(
+                data-bs-toggle="dropdown" style="font-size: 14px"
+              ) Merkliste
+              .dropdown-menu.p-0(style="min-width: unset")
+                .btn-group-vertical.w-100
+                  a.btn.btn-outline-primary(
+                    onclick="getWatchlist('all')"
+                  ) komplett
+                  a.btn.btn-outline-primary(
+                    onclick="getWatchlist('DÜS')"
+                  ) nur DÜS
+                  a.btn.btn-outline-primary(
+                    onclick="getWatchlist('HESS')"
+                  ) nur HESS
+                  a.btn.btn-outline-primary(
+                    onclick="getWatchlist('GOET')"
+                  ) nur GOET
+                  a.btn.btn-outline-primary(
+                    onclick="getWatchlist('THÜR')"
+                  ) nur THÜR
+
+            .dropdown
+              a#donelist.btn.btn-outline-primary.dropdown-toggle.px-1(
+                  data-bs-toggle="dropdown" style="font-size: 14px"
+              ) Erledigt
+              .dropdown-menu.p-0(style="min-width: unset")
+                .btn-group-vertical.w-100
+                  a.btn.btn-outline-primary(
+                    onclick="getDonelist('all')"
+                  ) komplett
+                  a.btn.btn-outline-primary(
+                    onclick="getDonelist('DÜS')"
+                  ) nur DÜS
+                  a.btn.btn-outline-primary(
+                    onclick="getDonelist('HESS')"
+                  ) nur HESS
+                  a.btn.btn-outline-primary(
+                    onclick="getDonelist('GOET')"
+                  ) nur GOET
+                  a.btn.btn-outline-primary(
+                    onclick="getDonelist('THÜR')"
+                  ) nur THÜR
+                  a.btn.btn-outline-primary(
+                    onclick="getDonelist('Erledigt')"
+                  ) nur n/a
+
+          p.statusmsg.text-primary(style="display: none")
+
+          #table_container
+
+#searchModal.modal(tabindex="-1")
+  .modal-dialog.modal-dialog-centered
+    .modal-content
+      .modal-header.bg-primary.text-white
+        h5.modal-title Filteroptionen
+        button.btn-close.btn-close-white(type="button" data-bs-dismiss="modal" aria-label="Close")
+      .modal-body
+        .mb-3
+          label.form-label(for="searchInput") Filtertext:
+          input#searchInput.border.form-control(type="text" placeholder="Text eingeben...")
+        
+        .d-flex.justify-content-start.align-items-center.mb-3
+            .form-check.form-switch.d-flex.align-items-center
+              label.form-check-label.mb-0.me-5(for="reservInput") Nur vorgemerkte Titel:
+              input#reservInput.form-check-input(type="checkbox" role="switch")
+            .form-check.form-switch.d-flex.align-items-center
+              label.form-check-label.mb-0.me-5(for="prioInput") Nur Titel mit Priorität:
+              input#prioInput.form-check-input(type="checkbox" role="switch")
+
+        
+      .modal-footer
+        button.btn.btn-outline-secondary(type="button" data-bs-dismiss="modal") Schließen
+        button#textSearchButton.btn.btn-primary(type="button") Filtern
+

@@ -1,0 +1,40 @@
+# Ignore node_modules folder
+node_modules/
+
+# Ignore log files
+*.log
+
+# Ignore build artifacts
+dist/
+build/
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore environment files
+.env
+.env.dev
+
+# Ignore IDE specific files
+.vscode/
+.idea/
+*.iml
+
+# Ignore temporary files
+*.tmp
+*.swp
+*.bak
+*.orig
+
+
+.dockerignore
+_notes/
+data/
+Mongo8/
+Mongo8⁠/
+.dockerignore
+xxx.html
+yyy.html
+zzz.html
+.DS_Store
