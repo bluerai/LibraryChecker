@@ -4,8 +4,8 @@ import { checkerCronJob, fullCheckerCronJob, queryCronJob } from '../utils/cron.
 import { logger } from '../utils/log.js';
 
 import {
-  homeAction, listAction, htmlFileAction, jsonFileAction, importHtmlAction, importJsonAction, upsertAction, updateAction, markAsDoneAction, markAsReservedAction,
-  resetAction, clearAction, deleteAction, itemAction, fullSearchAction, changeAction, upsertSearchItemAction,
+  homeAction, listAction, jsonFileAction, importJsonAction, upsertAction, updateAction, markAsDoneAction, markAsReservedAction,
+  resetAction, clearAction, deleteAction, itemAction, fullSearchAction, changeAction, upsertSearchItemAction, convertAction,
   getWaitlistAction, deleteSearchItemAction, updWaitListAction
 } from './controller.js';
 import upload from '../utils/uploadConfig.js';
@@ -15,11 +15,10 @@ const router = express.Router();
 
 router.get('/', homeAction);
 router.get('/list', listAction);
-router.post('/imp/html', importHtmlAction);
 router.post('/imp/json', importJsonAction);
 router.post('/menu', itemAction);
-router.post('/upd', updateAction);
-router.post('/upsert', upsertAction);
+router.post('/upd', updateAction);  //bulkUpdate
+router.post('/upsert', upsertAction);  //updateItem, importItem, saveSearchItem
 router.post('/done', markAsDoneAction);
 router.post('/change', changeAction);
 router.post('/reserved', markAsReservedAction);
@@ -27,9 +26,9 @@ router.post('/reset', resetAction);
 router.post('/clear', clearAction);
 router.post('/del', deleteAction);
 router.post('/search', fullSearchAction);
-router.post('/upl/html', upload.single('searchlistFile'), htmlFileAction);
 router.post('/upl/json', upload.single('jsonlistFile'), jsonFileAction);
 
+router.post('/conv', convertAction);
 router.post('/waitlist/upsert', upsertSearchItemAction);
 router.post('/waitlist/del', deleteSearchItemAction);
 router.post('/waitlist/get', getWaitlistAction);

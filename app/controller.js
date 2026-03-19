@@ -1,15 +1,12 @@
 import { join } from 'path';
 import { push } from '../utils/pushover.js';
-import fs from 'fs';
-import readline from 'readline';
 
 import {
   getItem, findItemId, findItem, findItemsToCheck, findItemsToClear, findSiblings, changeItem,
   moveToList, upsertItem, upsertItemById, deleteItem, findItems, upsertItems,
-  findSearchItems, deleteSearchItem, upsertSearchItem
+  findSearchItems, deleteSearchItem, upsertSearchItem, convert
 } from './model.js';
-import { processHtml, processJson } from '../utils/htmlParser.js';
-import { checkCassis, checkOnleihe, checkDone, searchCassis, queryOnleihe, getToday, httpRoot } from '../utils/searchForBooks.js';
+import { checkCassis, checkOnleihe, checkDone, checkReserved, searchCassis, getToday } from '../utils/searchForBooks.js';
 import { logger } from '../utils/log.js';
 
 /* status:
@@ -42,11 +39,16 @@ const mediaTypes = {
   "eBook": "400001",
   "eMagazine": "400005",
   "Hörbuch": "400002",
-  "Hörspiel": "400003",
   "ePaper": "400006",
-  "eLearning": "400013",
-  "Video": "400004"
+  "eLearning": "400013"
 }
+
+export const httpRoot = {
+  'DÜS': 'https://duesseldorf.onleihe.de',
+  'HESS': 'https://hessen.onleihe.de',
+  'GOET': 'https://www.onleihe.de/goethe-institut/frontend/',
+  'THÜR': 'https://www.onleihe.de/thuebibnet/frontend/'
+};
 
 function renderResultslistEntry(res, item, targetId, options) {
   res.render(join(import.meta.dirname, 'views', 'listEntry'), { item, targetId }, function (err, html) {
@@ -103,78 +105,89 @@ export async function listAction(req, res) {
   }
 }
 
-function calculatePagination(count) {
-  let itemsOnPage = 0;
-  let maxPage = 1;
+export async function processJson(kennung, items) {
+  logger.info(`parseJson: ${kennung}: ${items.length} items found`);
 
-  if (count <= 20) {
-    itemsOnPage = 20;
-  } else if (count <= 50) {
-    itemsOnPage = 50;
-  } else if (count <= 70) {
-    itemsOnPage = 70;
-  } else if (count <= 100) {
-    itemsOnPage = 100;
-  } else {
-    itemsOnPage = 100;
-    maxPage = Math.ceil(count / 100);
-  }
+  if (!kennung) { return null; }
 
-  return { itemsOnPage, maxPage }
-}
+  const results = [];
 
-export async function importHtml(kennung, count) {
+  const importType = "watchlist";
 
-  const category = 155;
-  const lang = "de";
+  for (const item of items) {
+    const mediaType = item.typ;
+    const mediaId = item.mediaId;
+    const received = undefined;
+    const author = item.autor.replaceAll(/[\n ]+/g, " ");  //ggf. mehrere Autoren!
+    const title = item.titel.replaceAll(/[\n ]+/g, " ");
 
-  logger.debug(`Abfrage gestartet: Kennung=${kennung}, Kategorie=${category}, Sprache: ${lang}, Anzahl: ${count}`);
+    let searchString = `${(author) ? author + "; " : ""}${title}`;
 
-  let insertedCount = 0;
-  let updatedCount = 0;
-  let errorCount = 0;
-  let availableCount = 0;
+    console.log("processJson:", searchString);
+    let available = (item.datum) ?
+      item.datum.substring(6, 10) + "-" + item.datum.substring(3, 5) + "-" + item.datum.substring(0, 2) :
+      undefined;
+    let status = (available) ? "=" : "*"
+    let listType = importType;
 
-  const { itemsOnPage, maxPage } = calculatePagination(parseInt(count))
+    if (await checkCassis(searchString)) {
+      //logger.debug(`parseHtml: ^ ${available} Cassis: ${searchString}`)
+      status = "^";
+      listType = 'donelist';
 
-  let items = [];
-  for (let pageNum = 0; pageNum < maxPage; pageNum++) {
+    } else {
+      const item0 = await checkReserved(kennung, searchString);
+      if (item0) {
+        searchString = item0.searchString
+        available = item0.datum; //Datum bleibt!
+        logger.debug(`processJson: # already in reservations: ${searchString} - ${available}`);
+        status = "#";
+        listType = 'reservations';
+      } else {
+        const item0 = await checkDone(searchString);
+        if (item0) {
+          logger.debug(`processJson: x ${available} erledigt: ${item0.searchString}`)
+          searchString = item0.searchString
+          status = ">";
+          listType = 'donelist';
+        }
+      }
+    }
 
-    const html = queryOnleihe(kennung, category, lang, itemsOnPage, pageNum);
 
-    items = await processHtml(html);
-    //console.log(`Found: ${items.length} item(s)`);
+    if (listType) {
 
-    if (items && items.length > 0) {
-      const result = await upsertItems(items);
-      insertedCount += result.insertedCount;
-      updatedCount += result.updatedCount;
-      errorCount += result.errorCount;
-      availableCount += result.availableCount;
+      const mediaData = {
+        available,
+        author: author,
+        title,
+        received,
+        kennung,
+        mediaId
+      }
+
+      const result = {
+        datum: available,
+        status,
+        kennung,
+        searchString,
+        mediaType,
+        mediaData,
+        listType,
+        received
+      };
+
+      // nur sichern, wenn nicht in Cassis
+      if (result.status !== "^")
+        results.push(result);
+      else
+        console.log("Gefunden in Cassis: ", result.searchString);
     }
   }
 
-  const message = `Bücher, neu: ${insertedCount}, aktualisiert: ${updatedCount}, verfügbar: ${availableCount}`
+  return results;
 
-  return ({ available: availableCount, message });
 }
-
-export async function importHtmlAction(req, res) {
-  try {
-    //console.log(req.body);
-    const { kennung, count } = req.body;
-
-    const result = await importHtml(kennung, count);
-
-    logger.info(`importHtmlDataAction: ${result.message}`);
-
-    res.status(200).json(result);
-
-  } catch (err) {
-    errorHandler(err, 'importHtmlDataAction', res);
-  }
-};
-
 
 export async function importJson(kennung, json) {
 
@@ -219,7 +232,6 @@ export async function importJsonAction(req, res) {
     const result = await importJson(kennung, json);
 
 
-
     console.log(`Found: ${json.length} item(s)`);
 
     logger.info(`importJsonDataAction: ${result.message}`);
@@ -231,42 +243,39 @@ export async function importJsonAction(req, res) {
   }
 };
 
-
 async function singleSearch(item) {
-  const { kennung, searchString, mediaType } = item;
-  logger.info(`singleSearch: searchString=${searchString}, kennung=${kennung}, mediaType=${mediaType}`);
-
-  let result = await checkCassis(searchString);  //{ count: data.count, datum: getToday(), status: "^", listType: 'donelist' }
+  console.log(`singleSearch: item`, item);
+  
+  let result = await checkCassis(item);  //{ datum: getToday(), status: "^", listType: 'donelist' }
   if (result) {
-    item.count = result.count;
     item.datum = result.datum;
     item.status = result.status;
     item.listType = result.listType;
-    logger.debug(`singleSearch: ^ ${result.datum} Cassis: ${searchString}`)
+    logger.debug(`singleSearch: ^ ${result.datum} Cassis: ${item.searchString}`)
 
   } else {
-    result = await checkDone(searchString);
+    result = await checkDone(item.searchString);
     if (result) {
       item.datum = result.datum;
       item.status = result.status;
       item.listType = result.listType;
       item.mediaId = result.mediaId;
-      logger.debug(`singleSearch: > ${result.datum} erledigt: ${searchString}`)
+      logger.debug(`singleSearch: > ${result.datum} erledigt: ${item.searchString}`)
     } else {
 
-      const results = await checkOnleihe(kennung, searchString, mediaType);
+      const results = await checkOnleihe(item);
+
+      if (results.length == 0) return null;
+
       result = results[0];
 
       item.datum = result.datum;
       item.status = result.status;
-      item.count = result.count;
       item.kennung = result.kennung;
       item.searchString = result.searchString;
+      item.received = result.received;
       item.mediaType = result.mediaType;
       item.mediaData = result.mediaData;
-      item.mediaId = result.mediaId;
-
-      logger.debug(`singleSearch: ${item.status} ${item.datum} Onleihe: ${item.mediaData.mediaId} ${item.mediaType} ${item.kennung} ${item.searchString}.`);
     }
   }
   return item;
@@ -275,11 +284,14 @@ async function singleSearch(item) {
 
 export async function upsertAction(req, res) {
   try {
-    const { item: itemData, targetId } = req.body;
-    logger.info(`upsertAction: itemData=${JSON.stringify(itemData)}, targetId=${targetId}`);
+    const { item: item0, targetId } = req.body;
+    console.log(`upsertAction: item0=`, item0, ", targetId=", targetId);
 
-    const oldDatum = itemData.datum || undefined;
-    let searchResult = await singleSearch(itemData);
+    const oldDatum = item0.datum || undefined;
+    let searchResult = await singleSearch(item0);
+
+    console.log("upsertAction", searchResult);
+
     if (!searchResult) {
       return res.status(404).json({ message: 'upsertAction: No item found' });
     }
@@ -296,11 +308,8 @@ export async function upsertAction(req, res) {
       message = `${item.mediaType} verfügbar ab ${item.datum}`;
     }
 
-    const options = {
-      item,
-      message,
-      url: `${httpRoot[item.kennung]}${item.mediaData.mediaRef}`
-    }
+    const options = { item, message }
+
     renderResultslistEntry(res, item, targetId, options)
 
   } catch (err) {
@@ -380,9 +389,8 @@ function sortResults(a, b) {
 
 async function prepareItem(item) {
   try {
-    const { kennung, searchString } = item;
-    if (kennung !== "CASSIS") {
-      const item0 = await findItem(kennung, searchString);
+    if (item.kennung !== "CASSIS") {
+      const item0 = await findItem(item.kennung, item.searchString);
 
       if (item0) {
         item._id = item0._id;
@@ -394,7 +402,7 @@ async function prepareItem(item) {
       }
 
       if (item.status !== "!") {
-        const result = (await checkCassis(searchString));
+        const result = (await checkCassis(item));
         if (result) item.status = result.status;
       }
 
@@ -409,22 +417,25 @@ async function prepareItem(item) {
 
 export async function fullSearchAction(req, res) {
   try {
-    const { searchString, mediaType, extendedMode, kennungen } = req.body;
-    logger.info(`fullSearchAction: searchString=${searchString}, mediaType=${mediaType}, extendedMode=${extendedMode}, kennungen=${kennungen}`);
+    const { searchString, mediaType, kennungen } = req.body;
+    logger.info(`fullSearchAction: searchString=${searchString}, mediaType=${mediaType}, kennungen=${kennungen}`);
 
-    const limit = 20; //max Anzahl von Ergebnissen pro Quelle
+    const limit = 50; //max Anzahl von Ergebnissen pro Quelle
 
     let results = [];
 
     for (const kennung of kennungen) {
       let results0;
+
       if (kennung === 'CASSIS') {
         results0 = (await searchCassis(searchString));
         results0.splice(limit);
+
       } else {
-        results0 = await checkOnleihe(kennung, searchString, mediaType, limit, extendedMode);
+        results0 = await checkOnleihe({ kennung, searchString, mediaType }, limit);
         results0 = results0.filter((item) => (item.status !== "!"));
       }
+
       results = results.concat(results0);
     }
 
@@ -513,6 +524,8 @@ export const updateAction = async (req, res) => {
 
     const items = await findItemsToCheck(days);
 
+    console.log('updateAction:', items.length, ' items gefunden')
+
     const { checkedCount, successCount, availCount } = await bulkUpdate(items, 15);
 
     res.status(200).json({ checkedCount, successCount, availCount });
@@ -523,43 +536,6 @@ export const updateAction = async (req, res) => {
 };
 
 
-
-export async function htmlFileAction(req, res) {
-  try {
-    if (!req.file) {
-      return res.status(400).send('htmlFileAction: No file uploaded');
-    }
-
-    const { buffer, originalname } = req.file;
-
-    logger.info(`htmlFileAction: file=${originalname}`);
-
-    let items = [];
-
-    if (originalname.endsWith('.html')) {
-      const html = buffer.toString('utf-8');
-      items = await processHtml(html);
-    }
-
-    if (items && items.length > 0) {
-      const { kennung, listType } = items[0]
-      logger.debug(`htmlFileAction: kennung=${kennung}, listType=${listType}`);
-
-      const result = await upsertItems(items);
-      if (result.success) {
-        logger.info(`htmlFileAction: kennung=${kennung}, listType=${listType}: neue Einträge: ${result.insertedCount}, aktualisierte Einträge: ${result.updatedCount}`);
-        res.status(200).json({ message: `${displayListTypes[listType]}, ${kennung}: neue Einträge: ${result.insertedCount}, aktualisierte Einträge: ${result.updatedCount}` });
-
-      } else {
-        logger.error('Fehler:', result.error);
-        res.status(500).json({ message: result.error }) //500 = internal server error
-      }
-    }
-
-  } catch (err) {
-    errorHandler(err, 'htmlFileAction', res);
-  }
-}
 
 export async function jsonFileAction(req, res) {
   try {
@@ -618,7 +594,7 @@ export const clearAction = async (req, res) => {
       try {
         ++checkedCount;
 
-        if (await checkCassis(item.searchString) ||
+        if (await checkCassis(item) ||
           (item.listType === 'donelist') && (item.mediaType === "eMagazine" || item.mediaType === "ePaper")) {
           logger.debug(`clearAction: [${checkedCount}] ${item.datum} Gelöscht: ${item.searchString} [${item.kennung}]`)
           deleteItem(item._id)
@@ -666,11 +642,20 @@ export async function itemAction(req, res) {
       }
     }
 
+    let url;
+    if (httpRoot[item.kennung]) {
+      if (item.mediaData?.mediaId && (item.mediaData.mediaId.length > 12))
+        url = `${httpRoot[item.kennung]}/search/mediadetail?productId=${item.mediaData.mediaId}`
+
+      else if (item.mediaData?.mediaRef)
+        url = `${httpRoot[item.kennung]}${item.mediaData.mediaRef}`
+    }
+
     const data = {
       targetId,
       listpath,
       displayListType: displayListTypes[item.listType],
-      url: `${httpRoot[item.kennung]}${item.mediaData?.mediaRef}`
+      url
     }
 
     res.render(join(import.meta.dirname, 'views', 'item'), { item, data }, function (err, html) {
@@ -693,10 +678,10 @@ export async function itemAction(req, res) {
 
 export async function upsertSearchItemAction(req, res) {
   try {
-    const { searchString, mediaType, extendedMode, kennungen, targetDate } = req.body;
-    logger.info(`upsertSearchItemAction: searchString=${searchString}, mediaType=${mediaType}, extendedMode=${extendedMode}, kennungen=${kennungen}, targetDate=${targetDate}`);
+    const { searchString, mediaType, kennungen, targetDate } = req.body;
+    logger.info(`upsertSearchItemAction: searchString=${searchString}, mediaType=${mediaType}, kennungen=${kennungen}, targetDate=${targetDate}`);
 
-    let item = { searchString, mediaType, extendedMode, kennungen, targetDate, available: [] };
+    let item = { searchString, mediaType, kennungen, targetDate, available: [] };
 
     await upsertSearchItem(item);
 
@@ -790,7 +775,7 @@ export async function updateSearchItems(items) {
     for (const kennung of item.kennungen) {
       if ((item.available.indexOf(kennung) === -1)) {
 
-        const results = await checkOnleihe(kennung, item.searchString, item.mediaType, limit, item.extendedMode);
+        const results = await checkOnleihe({ kennung, searchString: item.searchString, mediaType: item.mediaType }, limit);
         console.log(results);
 
         for (const result of results) {
@@ -831,6 +816,23 @@ export async function deleteSearchItemAction(req, res) {
 
   } catch (err) {
     errorHandler(err, 'deleteSearchItemAction', res);
+  }
+};
+
+
+
+export async function convertAction(req, res) {
+  try {
+    const { kennung } = req.body;
+    logger.debug(`convertAction`);
+
+    // Datenbankzugriff
+    await convert();
+
+    return res.status(200).json({ message: `convertAction: Daten konvertiert.` });
+
+  } catch (err) {
+    errorHandler(err, 'convertAction', res);
   }
 };
 

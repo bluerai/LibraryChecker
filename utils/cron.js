@@ -6,7 +6,7 @@ import { push } from './pushover.js';
 import { logger } from './log.js';
 
 import { findItemsToCheck } from '../app/model.js';
-import { bulkUpdate, importHtml, updateSearchItems } from '../app/controller.js';
+import { bulkUpdate, updateSearchItems } from '../app/controller.js';
 import { findSearchItems } from '../app/model.js';
 import { BackupService } from '../backup/model.js';
 import { getToday } from './searchForBooks.js';
@@ -75,35 +75,11 @@ export const targetSearchCronJob2 =
   );
 
 const targets = [
-  { kennung: 'THÜR', count: 300 },
-  //{ kennung: 'HEiSS', count: 200 },
-  { kennung: 'DÜS', count: 100 },
-  { kennung: "GOET", count: 50 }
+  //{ kennung: 'HESS', count: 200 },
+  //{ kennung: 'DÜS', count: 100 },
+  //{ kennung: "GOET", count: 50 },
+  // kennung: 'THÜR', count: 300 }
 ];
-
-async function queryJob() {
-  if (await checkCassisHealth()) {
-    for (const target of targets) {
-      try {
-        const result = await importHtml(target);
-
-        logger.info(`queryJob: Online-Abfrage ${target.kennung}: ${result.message}`);
-        if (result.available > 0)
-          push.sysinfo(result.message, `Online-Abfrage ${target.kennung}`);
-        /*  else
-           push.sysnote(result.message, `Online-Abfrage ${target.kennung}`); */
-
-      } catch (error) {
-        const message = `Cron: queryJob für ${target.kennung} fehlgeschlagen": ${error.message}`;
-        logger.error(message);
-        logger.debug(error.stack);
-        push.syserror(message);
-      }
-    }
-  } else {
-    push.sysinfo(`queryJob: Error accessing Cassis host`, `Check_lib`);
-  }
-}
 
 async function checkerJob() {
   if (await checkCassisHealth()) {

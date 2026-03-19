@@ -2,7 +2,7 @@
 
   .edit-container.px-0.pb-0
               
-      .card.my-2
+      .card#itemData.my-2
         .card-header.py-2
           .row.align-items-center
             .col-4.text-start.p-0
@@ -16,7 +16,7 @@
               button.btn.btn-sm.btn-outline-secondary(title="gehe zum Listeneintrag" id="gotoTarget" onclick=`gotoTarget('${data.targetId}', '${data.listpath}')`)
                 i.bi.bi-arrow-90deg-down(style="font-size: 18px")
 
-              if item.mediaData && item.mediaData.mediaRef
+              if item.mediaData && (item.mediaData.mediaRef || item.mediaData.mediaId)
                 a#logo-button.btn.btn-sm.btn-outline-secondary.ms-2(style="width:36px; height: 36px" href=data.url target="_blank" rel="noopener noreferrer") 
               else 
                 #logo-button
@@ -71,18 +71,7 @@
             .col-12
               textarea#searchString.form-control.border-primary(name="searchString" rows="2"
                 onChange=`changeItem('${item._id}', '${data.targetId}')`
-              )= item.searchString
-
-          .row.pb-2.d-none
-            .col-6
-            .col-4
-              label(for="priobox") Priorität: 
-            .col-2
-              .text-end
-                .form-check.form-switch
-                  input#priobox.form-check-input.border-primary(type="checkbox" 
-                    onChange=`changeItem('${item._id}', '${data.targetId}')` checked=item.prio)
-                  label.form-check-label(for="prio")         
+              )= item.searchString   
 
           #buttonbar
             .d-flex.justify-content-center
@@ -118,3 +107,5 @@
                 button.btn.btn-sm.btn-primary.m-1(title="Importieren" 
                   onclick=`importItem(${JSON.stringify(item).replaceAll("'", "\\'")}, '${data.targetId}')`
                 ) Importieren
+
+        .card-footer.statusmsg.text-primary(style="display: none")

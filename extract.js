@@ -1,6 +1,3 @@
-// Zum Ausführen in der Console
-
-
 (async function () {
 
   const TARGET_COUNT = 200;  // Anzahl der Bücher, die extrahiert werden sollen

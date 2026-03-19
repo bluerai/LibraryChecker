@@ -153,6 +153,7 @@ export async function upsertItemById(item) {
         listType: item.listType,
         mediaType: item.mediaType,
         mediaData: item.mediaData,
+        received: item.received,
         prio: item.prio,
         lastUpdated: new Date()
       }
@@ -224,7 +225,7 @@ export async function findItemsToClear(monthAgo) {
   }  */
 
   /* const query = { listType: "donelist" }; */
-  const query = { }; 
+  const query = {};
 
   return await DATA_COLL.find(query).sort({ lastUpdated: -1 }).toArray();
 }
@@ -243,7 +244,7 @@ export async function findItemsToCheck(days = 22) {
   const items = await DATA_COLL.find(
     {
       listType: 'watchlist',
-      datum: { $lte: cutOffDateStr },  
+      datum: { $lte: cutOffDateStr },
       lastUpdated: { $lte: maxUpdateTimestamp }
     }
   ).sort({ datum: 1, searchString: 1 }).toArray();
@@ -416,3 +417,166 @@ export async function deleteSearchItem(itemId) {
     throw error;
   }
 }
+// ================ Konvertierungen =================
+async function deleteStringMediaData() {
+  const result = await DATA_COLL.updateMany(
+    { mediaData: { $type: "string" } },
+    { $unset: { mediaData: 1 } }
+  );
+
+  console.log(`${result.modifiedCount} mediaData-Strings gelöscht`);
+  return result.modifiedCount;
+}
+
+async function processSearchStrings() {
+  try {
+    // Erst alle Dokumente als Array holen (einfacher zu debuggen)
+    const docs = await DATA_COLL.find({
+      searchString: { $regex: /^[^,]*,[^;]*;[^;]*$/ }
+    }).toArray();
+
+    console.log(`Gefundene Dokumente: ${docs.length}`);
+
+    let processedCount = 0;
+    let errorCount = 0;
+
+    for (const doc of docs) {
+      try {
+        // Ausführliche Validierung
+        if (!doc || typeof doc !== 'object') {
+          console.warn('Ungültiges Dokument (kein Objekt):', doc);
+          errorCount++;
+          continue;
+        }
+
+        if (!doc._id) {
+          console.warn('Dokument ohne _id:', doc);
+          errorCount++;
+          continue;
+        }
+
+        if (!doc.searchString || typeof doc.searchString !== 'string') {
+          console.warn(`Dokument ${doc._id} hat kein gültiges searchString-Feld`);
+          continue;
+        }
+
+        // Positionen finden
+        const commaIndex = doc.searchString.indexOf(',');
+        const semicolonIndex = doc.searchString.indexOf(';');
+
+        if (commaIndex === -1 || semicolonIndex === -1 || commaIndex > semicolonIndex) {
+          continue;
+        }
+
+        // Prüfen auf weitere Semikolons
+        if (doc.searchString.indexOf(';', semicolonIndex + 1) !== -1) {
+          continue;
+        }
+
+        // Teile extrahieren
+        const nachname = doc.searchString.substring(0, commaIndex).trim();
+        const vornameTeil = doc.searchString.substring(commaIndex + 1, semicolonIndex).trim();
+        const titel = doc.searchString.substring(semicolonIndex + 1).trim();
+
+        if (!nachname || !vornameTeil || !titel) {
+          continue;
+        }
+
+        // Update vorbereiten
+        const updateDoc = {};
+
+        // mediaData.author aktualisieren falls nötig
+        if (!doc.mediaData?.author?.trim()) {
+          updateDoc['mediaData.author'] = `${vornameTeil} ${nachname}`;
+        }
+
+        // mediaData.title aktualisieren falls nötig
+        if (!doc.mediaData?.title?.trim()) {
+          updateDoc['mediaData.title'] = titel;
+        }
+
+        // searchString aktualisieren
+        const neuerSearchString = `${doc.mediaData?.author || `${vornameTeil} ${nachname}`}; ${doc.mediaData?.title || titel}`;
+
+        if (doc.searchString !== neuerSearchString) {
+          updateDoc.searchString = neuerSearchString;
+        }
+
+        // Nur updaten wenn es Änderungen gibt
+        if (Object.keys(updateDoc).length > 0) {
+          await DATA_COLL.updateOne(
+            { _id: doc._id },
+            { $set: updateDoc }
+          );
+          processedCount++;
+          console.log(`Aktualisiert: ${doc._id}`);
+        }
+
+      } catch (docError) {
+        console.error('Fehler bei Dokument:', doc?._id, docError);
+        errorCount++;
+      }
+    }
+
+    console.log(`Verarbeitung abgeschlossen: ${processedCount} aktualisiert, ${errorCount} Fehler`);
+    return { processed: processedCount, errors: errorCount };
+
+  } catch (error) {
+    console.error('Schwerwiegender Fehler:', error);
+    throw error;
+  }
+}
+
+async function convertAutor() {
+  const filter = {
+    "mediaData.author": /,/
+  };
+
+  let cursor = DATA_COLL.find(filter);
+
+  //cursor = cursor.limit(count);
+
+  let converted = 0;
+
+  cursor.forEach(doc => {
+    const authorField = doc.mediaData?.author;
+    const title = doc.mediaData?.title;
+
+    if (!authorField || !title) return;
+
+    const authors = authorField.split(";").map(a => a.trim());
+
+    const convertedAuthors = authors.map(a => {
+      if (!a.includes(",")) return a;
+
+      const [last, first] = a.split(",").map(p => p.trim());
+      return `${first} ${last}`.trim();
+    });
+
+    const newAuthor = convertedAuthors.join("; ");
+    const newSearchString = `${newAuthor}; ${title}`;
+
+    DATA_COLL.updateOne(
+      { _id: doc._id },
+      {
+        $set: {
+          "mediaData.author": newAuthor,
+          searchString: newSearchString,
+          lastUpdated: new Date()
+        }
+      }
+    );
+
+    logger.debug(`convertAutor: ${authorField} --> ${newAuthor}`)
+
+    converted++;
+  });
+
+}
+
+export async function convert() {
+  convertAutor();
+  deleteStringMediaData() 
+  processSearchStrings();
+}
+

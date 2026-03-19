@@ -112,10 +112,6 @@ function getWatchlist(kennung) {
 function getDonelist(kennung) {
   getList({ 'listType': 'donelist', 'kennung': kennung, 'sort': 'lastUpdated', 'dir': 'asc' })
 }
-/* 
-function getSearchlist(searchString, mediaType, extendedMode, kennungen) {
-  getList({ 'listType': 'searchlist', searchString, mediaType, extendedMode, kennungen }) })
-} */
 
 async function getList(options) { // options:  { listType, kennung, sort, dir } 
   try {
@@ -315,17 +311,21 @@ function closeItemMenu() {  // menu - Schließen
   }
 }
 
-const httpRoot = {
-  'DÜS': 'https://www.onleihe.de/duesseldorf/frontend/',
-  //'HEiSS': 'https://hessen.onleihe.de/verbund_hessen/frontend/',
-  'GOET': 'https://www.onleihe.de/goethe-institut/frontend/',
-  'THÜR': 'https://www.onleihe.de/thuebibnet/frontend/'
-};
+const kennungen = ['DÜS', 'HESS', 'GOET', 'THÜR'];
+
 
 async function updateItem(item, targetId) {  // Menu - aktualisieren
+  if (!kennungen.includes(item.kennung)) {
+    showToast("Die Abfragean an diese Bibliothek sind nicht implementiert!", 'warning');
+    return;
+  }
+
+  const statusmsg = document.querySelector('#itemData  .statusmsg');
+  statusmsg.style.display = 'block';
+  insertTextWithSpinner(statusmsg, "Online-Abfrage gestartet ... ");
+
   try {
     item.searchString = document.getElementById('searchString').value;
-    item.prio = document.getElementById('priobox').checked;
     if (!item.listType) item.listType = 'watchlist';
 
     const result = await fetch('/upsert/', {
@@ -345,12 +345,8 @@ async function updateItem(item, targetId) {  // Menu - aktualisieren
         <input class="form-control text-center statusCell me-2" id="status" type="text" style="width:40px 
           readonly="readonly" title="Status" value="${data.options.item.status}">`
       document.getElementById('datum').value = data.options.item.datum;
+      document.getElementById('received').value = data.options.item.received;
       document.getElementById('lastUpdated').value = data.options.item.lastUpdated || "N/A";
-
-      const logoButton = document.getElementById('logo-button');
-      logoButton.outerHTML = `
-        <a class="btn btn-sm btn-outline-secondary" id="logo-button" style="width:40px; height: 40px" 
-          href="${data.options.url}" target="_blank" rel="noopener noreferrer"></a>`;
 
       const message = data.options.message;
       if (message && message.length > 0)
@@ -365,6 +361,8 @@ async function updateItem(item, targetId) {  // Menu - aktualisieren
     }
   } catch (error) {
     showToast('updateItem Fehler: ' + error.message, 'warning');
+  } finally {
+    statusmsg.style.display = 'none';
   }
 }
 
@@ -373,7 +371,6 @@ async function importItem(item, targetId, event) {  // Menu - übernehmen
   try {
     if (!event) {     //Aufruf aus item-Maske
       item.searchString = document.getElementById('searchString').value;
-      item.prio = document.getElementById('priobox').checked;
     }
     if (!item.listType) item.listType = 'watchlist';
 
@@ -412,20 +409,18 @@ async function importItem(item, targetId, event) {  // Menu - übernehmen
 async function changeItem(itemId, targetId) {
   try {
     if (!confirm("Änderung speichern?")) {
-      document.getElementById('priobox').checked = CUR_ITEM.prio;
       document.getElementById('searchString').value = CUR_ITEM.searchString;
       document.getElementById('datum').value = CUR_ITEM.datum;
       return;
     }
 
-    const prio = document.getElementById('priobox').checked;
     const searchString = document.getElementById('searchString').value;
     const datum = document.getElementById('datum').value;
 
     const result = await fetch('/change', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
-      body: `{ "itemId": "${itemId}", "searchString": "${searchString}", "prio": ${prio}, "datum": "${datum}", "targetId": "${targetId}" }`
+      body: `{ "itemId": "${itemId}", "searchString": "${searchString}", "datum": "${datum}", "targetId": "${targetId}" }`
     });
 
     const data = await result.json();
@@ -613,7 +608,6 @@ function toggleTab(tabId, force) {
       const item = CUR_ITEM;
       document.getElementById('fullSearchString').value = item.searchString;
       document.getElementById("mediaType").value = item.mediaType;
-      document.getElementById("extendedMode").value = false;
 
       /* const kennungen = (item.kennungen) ? item.kennungen : [item.kennung];
       setKennungen(kennungen); */
@@ -640,7 +634,6 @@ function openSearchTab(item, enableReturn) {
 
   document.getElementById('fullSearchString').value = item.searchString;
   document.getElementById("mediaType").value = item.mediaType;
-  document.getElementById("extendedMode").value = false;
 
   if (enableReturn) {
     resetKennungen()
@@ -670,13 +663,38 @@ function backToMenuItem() {
 function newSearchTab() {
   document.getElementById('fullSearchString').value = '';
   document.getElementById("mediaType").value = 'eBook';
-  document.getElementById("extendedMode").value = false;
   document.getElementById("targetDate").value = '';
   resetKennungen();
 }
 
 
-//**************** Online-Query
+//**************** Online-Query + Daten konvertieren
+
+async function convertData() {
+  try {
+    const statusmsg = document.querySelector('#convertData  .statusmsg');
+    statusmsg.style.display = 'block';
+    insertTextWithSpinner(statusmsg, "Online-Abfrage gestartet ... ");
+
+    const result = await fetch('/conv', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
+    });
+
+    const data = await result.json();
+    if (result.ok) {
+      statusmsg.textContent = data.message;
+
+    } else {
+      statusmsg.textContent = "";
+      statusmsg.style.display = 'none';
+      showToast('convertData: ' + data.message, 'warning');
+    }
+
+  } catch (error) {
+    showToast(statusText.textContent = 'convertData: ' + error.message, 'warning');
+  }
+}
 
 async function importQueryData() {
   try {
@@ -715,40 +733,7 @@ async function importQueryData() {
   }
 }
 
-//**************** FileImport
-
-function fileImportEventListener() {
-  document.getElementById('uploadForm').addEventListener('submit', async function (e) {
-    e.preventDefault();
-    const fileInput = document.getElementById('searchlistFile');
-    const formData = new FormData();
-    formData.append('searchlistFile', fileInput.files[0]);
-    const statusmsg = document.querySelector('#fileImport .statusmsg');
-    statusmsg.style.display = 'block';
-    insertTextWithSpinner(statusmsg, "Datei-Import gestartet ... ");
-
-    try {
-
-      const result = await fetch('/upl/htlm', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${TOKEN}` },
-        body: formData
-      });
-
-      const data = await result.json();
-      if (result.ok) {
-        statusmsg.textContent = data.message;
-      } else {
-        showToast('fileImportEventListener: ' + data.message, 'warning');
-        statusmsg.textContent = "";
-        statusmsg.style.display = 'none';
-      }
-    } catch (error) {
-      showToast('fileImportEventListener: Fehler: ' + error.message, 'warning');
-    }
-  })
-}
-
+//**************** File Upload
 
 function jsonImportEventListener() {
   document.getElementById('jsonUploadForm').addEventListener('submit', async function (e) {
@@ -765,7 +750,7 @@ function jsonImportEventListener() {
     if (!kennung) {
       alert("Bitte die Bibliothek auswählen.");
       return;
-    } 
+    }
     formData.append('kennung', kennung);
 
     const statusmsg = document.querySelector('#importJsonData .statusmsg');
@@ -886,12 +871,10 @@ async function fullSearch() { //Suche
   }
 
   const mediaType = document.getElementById('mediaType').value;
-  const extendedMode = document.getElementById('extendedMode').checked;
   const kennungen = getKennungen();
   kennungen.push('CASSIS');  //auch CASSIS einfügen
 
   try {
-    //const statusmsg = document.querySelector('#searchTab  .statusmsg');
     const statusmsg = document.querySelector('#itemlist_panel .statusmsg');
     statusmsg.style.display = 'block';
     insertTextWithSpinner(statusmsg, "Online-Suche gestartet ... ");
@@ -899,7 +882,7 @@ async function fullSearch() { //Suche
     const result = await fetch('/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
-      body: JSON.stringify({ searchString, mediaType, extendedMode, kennungen })
+      body: JSON.stringify({ searchString, mediaType, kennungen })
     });
 
     statusmsg.style.display = 'none';
@@ -909,9 +892,7 @@ async function fullSearch() { //Suche
     if (result.ok) {
       closeTableContainer();
       document.getElementById('table_container').innerHTML = data.html;
-
-      filterTable(FILTER_TEXT, FILTER_PRIO, FILTER_RESERV);
-
+      filterTable();
       document.getElementById('table_container').scrollIntoView({ block: 'start' });
 
     } else {
@@ -948,7 +929,6 @@ async function saveSearchItem() {
     return;
   }
   const mediaType = document.getElementById('mediaType').value;
-  const extendedMode = document.getElementById('extendedMode').checked;
   const kennungen = getKennungen();
   const targetDate = document.getElementById('targetDate').value;
   if (!targetDate) {
@@ -959,7 +939,7 @@ async function saveSearchItem() {
     const result = await fetch('/waitlist/upsert', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
-      body: JSON.stringify({ searchString, mediaType, extendedMode, kennungen, targetDate })
+      body: JSON.stringify({ searchString, mediaType, kennungen, targetDate })
     });
 
     const data = await result.json();
@@ -1041,7 +1021,6 @@ async function updateWaitlist(sort = 'targetDate', dir = 'asc') {
     }
 
     document.getElementById('searchInput').value = FILTER_TEXT;
-    document.getElementById('prioInput').checked = FILTER_PRIO;
     document.getElementById('reservInput').checked = FILTER_RESERV;
     loadSearchModal();
     setTimeout(() => statusmsg.style.display = 'none', 300);
@@ -1062,7 +1041,6 @@ function closeTableContainer() {
 async function openSearchMenu(item) {
   gotoSuche(item)
   document.getElementById("targetDate").value = item.targetDate;
-  document.getElementById('extendedMode').value = item.extendedMode;
   setKennungen(item.kennungen);
 }
 
