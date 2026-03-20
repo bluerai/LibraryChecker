@@ -124,13 +124,15 @@ export async function processJson(kennung, items) {
     let searchString = `${(author) ? author + "; " : ""}${title}`;
 
     console.log("processJson:", searchString);
+
     let available = (item.datum) ?
       item.datum.substring(6, 10) + "-" + item.datum.substring(3, 5) + "-" + item.datum.substring(0, 2) :
       undefined;
     let status = (available) ? "=" : "*"
     let listType = importType;
 
-    if (await checkCassis(searchString)) {
+
+    if (await checkCassis({ searchString })) {
       //logger.debug(`parseHtml: ^ ${available} Cassis: ${searchString}`)
       status = "^";
       listType = 'donelist';
@@ -245,7 +247,7 @@ export async function importJsonAction(req, res) {
 
 async function singleSearch(item) {
   console.log(`singleSearch: item`, item);
-  
+
   let result = await checkCassis(item);  //{ datum: getToday(), status: "^", listType: 'donelist' }
   if (result) {
     item.datum = result.datum;
@@ -643,12 +645,11 @@ export async function itemAction(req, res) {
     }
 
     let url;
-    if (httpRoot[item.kennung]) {
+    if (['HESS', 'DÜS'].includes(item.kennung)) {
       if (item.mediaData?.mediaId && (item.mediaData.mediaId.length > 12))
         url = `${httpRoot[item.kennung]}/search/mediadetail?productId=${item.mediaData.mediaId}`
-
-      else if (item.mediaData?.mediaRef)
-        url = `${httpRoot[item.kennung]}${item.mediaData.mediaRef}`
+    } else {
+      url = `${httpRoot[item.kennung]}${item.mediaData.mediaRef}`
     }
 
     const data = {

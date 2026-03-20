@@ -10,12 +10,16 @@ export function getToday() {
 
 export async function checkCassis(item) {
 
-  //logger.debug(`checkCassis: ${searchString}`)
-  const url = 'http://' + cassisHost + '/api/count?search=' + encodeURIComponent(item.searchString);
+  logger.debug(`checkCassis: ${item.searchString}`)
+  const url = `http://${cassisHost}/api/count?search=${encodeURIComponent(item.searchString)}`;
+
+  console.log('url', url)
 
   let result;
   try {
     result = await fetch(url);
+    console.log('checkCassis:', result)
+
   } catch (error) {
     console.error(error);
     throw new Error(`HTTP error! status: ${result.status}`);
