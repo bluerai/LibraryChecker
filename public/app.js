@@ -139,7 +139,7 @@ async function getList(options) { // options:  { listType, kennung, sort, dir }
 
     } else {
       const data = await result.json();
-      data.message && showToast('getList: ' + data.message, 'warning');
+      data.message && showToast('getList: ' + data.error, 'warning');
     }
 
     document.getElementById('searchInput').value = FILTER_TEXT;
@@ -357,14 +357,17 @@ async function updateItem(item, targetId) {  // Menu - aktualisieren
       RELOAD_NEEDED = true;
 
     } else {
-      showToast('updateItem: ' + data.message, 'warning');
+      showToast('updateItem: ' + data.error, 'warning');
     }
+
+
   } catch (error) {
     showToast('updateItem Fehler: ' + error.message, 'warning');
   } finally {
     statusmsg.style.display = 'none';
   }
 }
+
 
 async function importItem(item, targetId, event) {  // Menu - übernehmen
   if (event) event.stopPropagation();

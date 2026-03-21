@@ -192,6 +192,7 @@ export async function upsertItem(item) {
     logger.debug(`upsertItem completed: ${JSON.stringify(result)}`);
     return result.value;
   } catch (error) {
+    console.log('Error in upsertItem:', item)
     logger.error('Error in upsertItem:', error);
     throw error;
   }

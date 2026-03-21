@@ -16,11 +16,13 @@
               button.btn.btn-sm.btn-outline-secondary(title="gehe zum Listeneintrag" id="gotoTarget" onclick=`gotoTarget('${data.targetId}', '${data.listpath}')`)
                 i.bi.bi-arrow-90deg-down(style="font-size: 18px")
 
+              a#logo-button.btn.btn-sm.btn-outline-secondary.ms-2(style="width:36px; height: 36px" href=data.cassisUrl target="_blank" rel="noopener noreferrer") 
+
               if item.mediaData && (item.mediaData.mediaRef || item.mediaData.mediaId)
-                a#logo-button.btn.btn-sm.btn-outline-secondary.ms-2(style="width:36px; height: 36px" href=data.url target="_blank" rel="noopener noreferrer") 
+                a#logo-button.btn.btn-sm.btn-outline-secondary.ms-2(style="width:36px; height: 36px" href=data.onlUrl target="_blank" rel="noopener noreferrer") 
               else 
                 #logo-button
-
+                
         .card-body.align-items-center.p-2
           .row.pb-1
             .col-6.d-flex

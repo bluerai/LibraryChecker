@@ -1,7 +1,7 @@
 import { findItemDone, findItemReserved } from '../app/model.js';
 import { logger } from './log.js';
 
-const cassisHost = process.env.CASSIS_HOST; 
+const cassisHost = process.env.CASSIS_HOST;
 const scraperHost = process.env.SCRAPER_HOST;
 
 export function getToday() {
@@ -9,16 +9,12 @@ export function getToday() {
 }
 
 export async function checkCassis(item) {
-
   logger.debug(`checkCassis: ${item.searchString}`)
   const url = `http://${cassisHost}/api/count?search=${encodeURIComponent(item.searchString)}`;
-
-  console.log('url', url)
 
   let result;
   try {
     result = await fetch(url);
-    console.log('checkCassis:', result)
 
   } catch (error) {
     console.error(error);
@@ -140,30 +136,30 @@ export async function checkOnleihe(item0, limit = 1) {
 
   let url;
   if (['HESS', 'DÜS'].includes(item0.kennung)) url = `http://${scraperHost}/search3`
-
   else if (['THÜR', 'GOET'].includes(item0.kennung)) url = `http://${scraperHost}/search2`
-
   else return [];
 
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(item0)
+    body: JSON.stringify({ item: item0, limit: limit })
   });
 
-  let itemData = await res.json();
+  const data = await res.json();
 
-  if (itemData.error || itemData.length == 0) return [];
+  if (data.error) throw new Error(data.error)
 
-  console.log(itemData);
+  if (data.length == 0) return data;
+
+  console.log('checkOnleihe: data=', data);
 
   let results = [];
 
   const today = getToday();
 
-  for (let index = 0; index < Math.min(itemData.length, limit); index++) {
+  for (let index = 0; index < data.length; index++) {
 
-    const item = itemData[index];
+    const item = data[index];
 
     let available = item.datum;
 
@@ -216,8 +212,9 @@ export async function checkOnleihe(item0, limit = 1) {
     }
   }
 
-  if (results.length === 0)
-    return [{ status: "!", kennung: item0.kennung, searchString: item0.searchString, datum: "N/A", mediaType: item0.mediaType }];
+  /* if (results.length === 0)
+    results.push({ status: "!", kennung: item0.kennung, searchString: item0.searchString, datum: "N/A", mediaType: item0.mediaType });
+ */
 
   console.log(results);
 

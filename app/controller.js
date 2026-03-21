@@ -20,6 +20,8 @@ x erledigt
 - zurückgesetzt in die watchlist
 */
 
+const cassisHost = process.env.CASSIS_HOST;
+
 const displayListTypes = {
   'watchlist': 'Merkliste',
   'reservations': 'Vormerkungen',
@@ -54,7 +56,7 @@ function renderResultslistEntry(res, item, targetId, options) {
   res.render(join(import.meta.dirname, 'views', 'listEntry'), { item, targetId }, function (err, html) {
     if (err) {
       console.error(err);
-      res.status(500).json({ message: 'renderResultslistEntry: ' + err.message });
+      res.status(500).json({ error: 'renderResultslistEntry: ' + err.message });
     } else {
       res.status(200).json({ html, options });
     }
@@ -265,7 +267,7 @@ async function singleSearch(item) {
       logger.debug(`singleSearch: > ${result.datum} erledigt: ${item.searchString}`)
     } else {
 
-      const results = await checkOnleihe(item);
+      const results = await checkOnleihe(item, 1);
 
       if (results.length == 0) return null;
 
@@ -448,7 +450,7 @@ export async function fullSearchAction(req, res) {
     res.render(join(import.meta.dirname, 'views', 'resultlist'), { results: preparedResults }, function (err, html) {
       if (err) {
         console.error(err);
-        res.status(500).json({ message: 'render resultlist: ' + err.message });
+        res.status(500).json({ error: 'render resultlist: ' + err.message });
       } else {
         res.status(200).json({ html: html });
       }
@@ -569,11 +571,11 @@ export async function jsonFileAction(req, res) {
 
       if (result.success) {
         logger.info(`jsonFileAction: kennung=${kennung}: neue Einträge: ${result.insertedCount}, aktualisierte Einträge: ${result.updatedCount}`);
-        res.status(200).json({ message: `${kennung}: neue Einträge: ${result.insertedCount}, aktualisierte Einträge: ${result.updatedCount}` });
+        res.status(200).json({ success: `${kennung}: neue Einträge: ${result.insertedCount}, aktualisierte Einträge: ${result.updatedCount}` });
 
       } else {
         logger.error('Fehler:', result.error);
-        res.status(500).json({ message: result.error }) //500 = internal server error
+        res.status(500).json({ error: result.error }) //500 = internal server error
       }
     }
 
@@ -644,25 +646,28 @@ export async function itemAction(req, res) {
       }
     }
 
-    let url;
+    let cassisUrl = `http://${cassisHost}/app/search/${encodeURIComponent(item.searchString)}`;
+
+    let onlUrl;
     if (['HESS', 'DÜS'].includes(item.kennung)) {
       if (item.mediaData?.mediaId && (item.mediaData.mediaId.length > 12))
-        url = `${httpRoot[item.kennung]}/search/mediadetail?productId=${item.mediaData.mediaId}`
+        onlUrl = `${httpRoot[item.kennung]}/search/mediadetail?productId=${item.mediaData.mediaId}`
     } else {
-      url = `${httpRoot[item.kennung]}${item.mediaData.mediaRef}`
+      onlUrl = `${httpRoot[item.kennung]}${item.mediaData.mediaRef}`
     }
 
     const data = {
       targetId,
       listpath,
       displayListType: displayListTypes[item.listType],
-      url
+      cassisUrl,
+      onlUrl
     }
 
     res.render(join(import.meta.dirname, 'views', 'item'), { item, data }, function (err, html) {
       if (err) {
         console.error(err);
-        res.status(500).json({ message: 'render item: ' + err.message });
+        res.status(500).json({ error: 'render item: ' + err.message });
       } else {
         //logger.debug(html);
         res.send({ html });
@@ -830,7 +835,7 @@ export async function convertAction(req, res) {
     // Datenbankzugriff
     await convert();
 
-    return res.status(200).json({ message: `convertAction: Daten konvertiert.` });
+    return res.status(200).json({ success: `convertAction: Daten konvertiert.` });
 
   } catch (err) {
     errorHandler(err, 'convertAction', res);
@@ -843,6 +848,6 @@ const errorHandler = (err, actionName, res) => {
   logger.error(message);
   if (err.stack) logger.debug(err.stack);
   if (res) {
-    res.status(500).json({ message: 'Fehler: ' + err.message });
+    res.status(500).json({ error: 'Fehler: ' + err.message });
   }
 };
