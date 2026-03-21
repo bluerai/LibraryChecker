@@ -139,6 +139,36 @@ export async function changeItem(itemId, newSearchString, newPrio, newDatum) {
 }
 
 
+export async function updateItemById(item) {
+  const itemId = item._id;
+  const result = await DATA_COLL.findOneAndUpdate(
+    { _id: new ObjectId(itemId) },
+    {
+      $set: {
+        kennung: item.kennung,
+        searchString: item.searchString,
+        mediaType: item.mediaType,
+        datum: item.datum,
+        status: item.status,
+        listType: item.listType,
+        mediaType: item.mediaType,
+        mediaData: item.mediaData,
+        received: item.received,
+        prio: item.prio,
+        lastUpdated: new Date()
+      }
+    },
+    {
+      upsert: false,
+      returnDocument: 'after'
+    }
+  );
+
+  logger.debug("upsertItemById: " + JSON.stringify(result))
+  return result;
+}
+
+
 export async function upsertItemById(item) {
   const itemId = item._id;
   const result = await DATA_COLL.findOneAndUpdate(
@@ -232,7 +262,7 @@ export async function findItemsToClear(monthAgo) {
 }
 
 
-export async function findItemsToCheck(days = 22) {
+export async function findEBooksToCheck(days = 22) {
 
   // Berechne Cutoff-Datum
   const cutoffDate = new Date();
@@ -244,6 +274,7 @@ export async function findItemsToCheck(days = 22) {
   // Finde relevante Items
   const items = await DATA_COLL.find(
     {
+      mediaType: 'eBook',
       listType: 'watchlist',
       datum: { $lte: cutOffDateStr },
       lastUpdated: { $lte: maxUpdateTimestamp }

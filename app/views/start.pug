@@ -131,7 +131,7 @@ html(lang="de")
               form(method="POST" action="/upload/json" enctype="multipart/form-data" id='jsonUploadForm')
                 .card.mb-2#importJsonData
                   .card-header(onClick="toggleCardBody(this)")
-                    h5.mb-0.text-start Daten aus JSON-Datei laden 
+                    h5.mb-0.text-start E-Book-Daten aus Datei laden 
                       i.bi.bi-caret-down-fill.text-primary
 
                   .card-body(style="display: none")
@@ -154,7 +154,7 @@ html(lang="de")
                         input.form-control(type="file" name="jsonListFile" id="jsonlistFile" accept=".json" required)
 
                     .text-end
-                      button.btn.btn-primary(type="submit") Aus JSON-Datei laden
+                      button.btn.btn-primary(type="submit") Datei hochladen
 
                   .card-footer.mb-2.statusmsg.text-primary(style="display: none")
                 script.
@@ -162,7 +162,7 @@ html(lang="de")
                               
               .card.mb-2#bulkUpdate
                 .card-header(onClick="toggleCardBody(this)")
-                  h5.mb-0 Daten aktualisieren
+                  h5.mb-0 E-Book-Daten aktualisieren
                     i.bi.bi-caret-down-fill.text-primary
 
                 .card-body(style="display: none")
@@ -170,7 +170,7 @@ html(lang="de")
                     .col-6
                         label.form-label.center(for="daysInput") Tage: 
                           input#daysInput.form-control.d-inline-block.center(type="number" min="1" value="7" style="width: 88px")
-                        p Datensätze aktualisieren, die nicht in der letzten Stunde geändert wurden.  
+                        p Nur Daten aktualisieren, die nicht in der letzten Stunde geändert wurden.  
     
                     .col-6.text-end
                       button.btn.btn-primary(onclick="bulkUpdate()") Jetzt starten

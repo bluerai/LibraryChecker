@@ -5,7 +5,7 @@ import { CronJob } from 'cron';
 import { push } from './pushover.js';
 import { logger } from './log.js';
 
-import { findItemsToCheck } from '../app/model.js';
+import { findEBooksToCheck } from '../app/model.js';
 import { bulkUpdate, updateSearchItems } from '../app/controller.js';
 import { findSearchItems } from '../app/model.js';
 import { BackupService } from '../backup/model.js';
@@ -84,7 +84,7 @@ const targets = [
 async function checkerJob() {
   if (await checkCassisHealth()) {
     try {
-      const items = await findItemsToCheck(22)  // die nächsten 22 Tage
+      const items = await findEBooksToCheck(22)  // die nächsten 22 Tage
       logger.info(`Cron: checkerJob startet. Es werden ${items.length} Einträge überprüft.`);
       const { checkedCount, availCount } = await bulkUpdate(items, 32);  //wait in sec zwischen den Überprüfungen
       const message = `Cron: ${checkedCount} Bücher überprüft - ${availCount} Bücher sind aktuell verfügbar`;
@@ -105,7 +105,7 @@ async function checkerJob() {
 async function fullCheckerJob() {
   if (await checkCassisHealth()) {
     try {
-      const items = await findItemsToCheck(9999);
+      const items = await findEBooksToCheck(9999);
       logger.info(`Cron: checkerJob startet. Es werden ${items.length} Einträge überprüft.`);
       const { checkedCount, availCount } = await bulkUpdate(items, 32); //wait in sec zwischen den Überprüfungen
       const message = `Bücher: überprüft: ${checkedCount}, davon verfügbar: ${availCount}`;

@@ -79,9 +79,10 @@
             .d-flex.justify-content-center
 
               if item.listType === 'watchlist'
-                button.btn.btn-sm.btn-primary.m-1(title="Aktualisieren & Speichern" 
-                  onclick=`updateItem(${JSON.stringify(item).replaceAll("'", "\\'")}, '${data.targetId}')`
-                ) Aktualisieren
+                if item.mediaType == 'eBook'
+                  button.btn.btn-sm.btn-primary.m-1(title="Aktualisieren & Speichern" 
+                    onclick=`updateItem(${JSON.stringify(item).replaceAll("'", "\\'")}, '${data.targetId}')`
+                  ) Aktualisieren
                 button.btn.btn-sm.btn-primary.m-1(title="zu Vormerkungen" 
                   onclick=`setItemReserved('${item._id}', '${data.targetId}')`
                 ) Vormerkung

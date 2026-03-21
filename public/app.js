@@ -348,11 +348,8 @@ async function updateItem(item, targetId) {  // Menu - aktualisieren
       document.getElementById('received').value = data.options.item.received;
       document.getElementById('lastUpdated').value = data.options.item.lastUpdated || "N/A";
 
-      const message = data.options.message;
-      if (message && message.length > 0)
-        showToast(message, 'info');
-      else
-        showToast("Keine Änderung der Verfügbarkeit", 'info');
+      const message = data.options.message || "Keine Änderung der Verfügbarkeit";
+      showToast(message, 'info');
 
       RELOAD_NEEDED = true;
 
@@ -800,14 +797,15 @@ async function bulkUpdate() {
 
     const data = await result.json();
 
-    if (result.ok) {
-      statusmsg.textContent = `${data.availCount} von ${data.checkedCount} Einträgen verfügbar.`;
+    statusmsg.textContent = "";
+    statusmsg.style.display = 'none';
+
+    if (data.success) {
+      showToast('bulkUpdate: ' + data.success, 'warning');
       reloadList();
 
     } else {
-      statusmsg.textContent = "";
-      statusmsg.style.display = 'none';
-      showToast('bulkUpdate: ' + data.message, 'warning');
+      showToast('bulkUpdate: ' + data.error, 'warning');
 
     }
   } catch (error) {
@@ -899,7 +897,7 @@ async function fullSearch() { //Suche
       document.getElementById('table_container').scrollIntoView({ block: 'start' });
 
     } else {
-      showToast('fullSearch: ' + data.message, 'warning');
+      showToast('fullSearch: ' + data.error, 'warning');
     }
 
   } catch (error) {
@@ -1280,7 +1278,8 @@ function showToast(message, textBgType = 'primary') {
     `;
   console.log(message);
   document.body.appendChild(toastContainer);
-  setTimeout(() => toastContainer.remove(), 3000);
+  if (textBgType !== 'warning' && textBgType !== 'alarm')
+    setTimeout(() => toastContainer.remove(), 3000);
 }
 
 function insertTextWithSpinner(element, text) {

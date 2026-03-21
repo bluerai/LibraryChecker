@@ -2,8 +2,8 @@ import { join } from 'path';
 import { push } from '../utils/pushover.js';
 
 import {
-  getItem, findItemId, findItem, findItemsToCheck, findItemsToClear, findSiblings, changeItem,
-  moveToList, upsertItem, upsertItemById, deleteItem, findItems, upsertItems,
+  getItem, findItemId, findItem, findEBooksToCheck, findItemsToClear, findSiblings, changeItem,
+  moveToList, upsertItem, upsertItemById, updateItemById, deleteItem, findItems, upsertItems,
   findSearchItems, deleteSearchItem, upsertSearchItem, convert
 } from './model.js';
 import { checkCassis, checkOnleihe, checkDone, checkReserved, searchCassis, getToday } from '../utils/searchForBooks.js';
@@ -222,7 +222,7 @@ export async function importJsonAction(req, res) {
 
     const { kennung, jsonString } = req.body
 
-    //TODO Input validieren!
+    //TODO Input validieren! u.a. nur eBooks!
 
     console.log(kennung);
     console.log(jsonString);
@@ -485,40 +485,35 @@ export async function deleteAction(req, res) {
 
 export async function bulkUpdate(items, wait) {  // wait in sec
   logger.info(`bulkUpdate: items.length=${items.length}, wait=${wait}`);
-  let checkedCount = 0;
-  let successCount = 0;
   let availCount = 0;
+  let availDateCount = 0;
 
   for (const item of items) {
     try {
-      ++checkedCount;
-
+      const datum = item.datum;
       let result = await singleSearch(item);
-      // Ergebnis speichern
-      result = await upsertItemById(result);
+
+      result = await updateItemById(result);
 
       if (result.status === "*") availCount++;
-
-      successCount++;
+      console.log("*****", result.datum, item.datum)
+      if (result.datum !== datum) availDateCount++;
 
       if (item !== items[items.length - 1]) {
         // Warte (außer beim letzten Item)
         await new Promise(resolve => setTimeout(resolve, Math.floor(wait + Math.random(wait) * 1000)));
       }
-
-
     } catch (err) {
-      logger.error(`bulkUpdate: Fehler bei Item ${checkedCount}: "${item.kennung}" "${item.searchString}":`, err);
+      const message = `bulkUpdate: Fehler bei: "${item.kennung}" "${item.searchString}":`
+      logger.error(message, err);
+      push.syswarn(message, "Library Checker");
+      return { error: message };
     }
   }
-  const message = `bulkUpdate: Prüfung abgeschlossen: ${successCount} von ${checkedCount} Einträgen erfolgreich geprüft`;
-  if (successCount === checkedCount) {
-    logger.info(message);
-  } else {
-    logger.warn(message);
-    push.syswarn(message, "Library Checker");
-  }
-  return { checkedCount, successCount, availCount };
+
+  const message = `bulkUpdate: eBooks, geprüft: ${checkedCount}, Datum geändert: ${availDateCount}, verfügbar: ${availCount}`;
+  logger.info(message);
+  return { success: message };
 }
 
 export const updateAction = async (req, res) => {
@@ -526,13 +521,12 @@ export const updateAction = async (req, res) => {
     const { days } = req.body;
     logger.info(`updateAction: days=${days}`);
 
-    const items = await findItemsToCheck(days);
-
+    const items = await findEBooksToCheck(days);
     console.log('updateAction:', items.length, ' items gefunden')
 
-    const { checkedCount, successCount, availCount } = await bulkUpdate(items, 15);
+    const result = await bulkUpdate(items, 15);
 
-    res.status(200).json({ checkedCount, successCount, availCount });
+    res.status((result.success) ? 200 : 500).json(result);
 
   } catch (err) {
     errorHandler(err, 'updateAction', res);
@@ -612,7 +606,7 @@ export const clearAction = async (req, res) => {
 
           } else {
             if (typeof item.lastUpdated === 'string' || item.lastUpdated instanceof String) {
-              upsertItemById(item)
+              updateItemById(item)
             }
           }
         }
