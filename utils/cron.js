@@ -81,7 +81,7 @@ const targets = [
   // kennung: 'THÜR', count: 300 }
 ];
 
-async function checkerJob() {
+async function checkerJob() {        //Einzelprüfungen
   if (await checkCassisHealth()) {
     try {
       const items = await findEBooksToCheck(22)  // die nächsten 22 Tage

@@ -20,7 +20,7 @@ x erledigt
 - zurückgesetzt in die watchlist
 */
 
-const cassisHost = process.env.CASSIS_HOST;
+const cassisRemoteAdr = process.env.CASSIS_REMOTE_ADR;
 
 const displayListTypes = {
   'watchlist': 'Merkliste',
@@ -640,7 +640,9 @@ export async function itemAction(req, res) {
       }
     }
 
-    let cassisUrl = `http://${cassisHost}/app/search/${encodeURIComponent(item.searchString)}`;
+    let cassisUrl = cassisRemoteAdr + encodeURIComponent(item.searchString);
+
+    console.log("cassisUrl", cassisUrl)
 
     let onlUrl;
     if (['HESS', 'DÜS'].includes(item.kennung)) {

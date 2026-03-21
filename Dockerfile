@@ -15,6 +15,7 @@ VOLUME /home/node/data
 ENV HTTP_PORT=80
 ENV TZ=Europe/Berlin
 ENV CHECKLIB_DATA=/home/node/data
+ENV CASSIS_REMOTE_ADR=https://14029.meine-homematic.de:8014/app/search/
 
 ENV LOGLEVEL=info
 

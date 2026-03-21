@@ -8,20 +8,18 @@
             .col-4.text-start.p-0
               button.btn.btn-sm.btn-outline-secondary.ms-1(title="Fertig" onclick="closeItemMenu()")
                 i.bi.bi-x-lg(style="font-size: 18px")  
+              button.btn.btn-sm.btn-outline-secondary.ms-2(title="gehe zum Listeneintrag" id="gotoTarget" onclick=`gotoTarget('${data.targetId}', '${data.listpath}')`)
+                i.bi.bi-arrow-90deg-down(style="font-size: 18px")
 
             .col-4.text-center.p-0
               h5.mb-0= (item.mediaType || 'eBook')
 
             .col-4.text-end.p-0
-              button.btn.btn-sm.btn-outline-secondary(title="gehe zum Listeneintrag" id="gotoTarget" onclick=`gotoTarget('${data.targetId}', '${data.listpath}')`)
-                i.bi.bi-arrow-90deg-down(style="font-size: 18px")
 
-              a#logo-button.btn.btn-sm.btn-outline-secondary.ms-2(style="width:36px; height: 36px" href=data.cassisUrl target="_blank" rel="noopener noreferrer") 
+              a#cassis-button.btn.btn-sm.btn-outline-secondary.ms-2(style="width:36px; height: 36px" href=data.cassisUrl target="_blank" rel="noopener noreferrer") 
 
               if item.mediaData && (item.mediaData.mediaRef || item.mediaData.mediaId)
-                a#logo-button.btn.btn-sm.btn-outline-secondary.ms-2(style="width:36px; height: 36px" href=data.onlUrl target="_blank" rel="noopener noreferrer") 
-              else 
-                #logo-button
+                a#onl-button.btn.btn-sm.btn-outline-secondary.ms-2.me-1(style="width:36px; height: 36px" href=data.onlUrl target="_blank" rel="noopener noreferrer") 
                 
         .card-body.align-items-center.p-2
           .row.pb-1
@@ -36,12 +34,12 @@
               input#mediaType.form-control.text-center(type="text" readonly class=item.listType || '' style="min-width: 80px"
                 title="Media-Typ" value=data.displayListType)
 
-          .row.pb-1
-            .col-6
-              label(for="received") Im Bestand seit:
-            .col-6
-              input#received.form-control.text-center.border-primary(type="text" readonly
-                value=(item.mediaData) ? item.mediaData.received : 'N/A')
+          if item.mediaData && item.mediaData.received 
+            .row.pb-1
+              .col-6
+                label(for="received") Im Bestand seit:
+              .col-6
+                input#received.form-control.text-center.border-primary(type="text" readonly value=item.mediaData.received)
 
           .row.pb-1
             .col-6

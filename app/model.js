@@ -608,7 +608,7 @@ async function convertAutor() {
 
 export async function convert() {
   convertAutor();
-  deleteStringMediaData() 
-  processSearchStrings();
+  //deleteStringMediaData() 
+  //processSearchStrings();
 }
 

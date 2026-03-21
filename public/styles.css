@@ -272,7 +272,12 @@ tbody tr:hover td {
   text-align: center;
 }
 
-#logo-button {
-  background: url("../logo-grau.png") no-repeat left center;
+#onl-button {
+  background: url("../onl-logo72.png") no-repeat left center;
+  background-size: 40px 40px;
+}
+
+#cassis-button {
+  background: url("../cassis72.png") no-repeat left center;
   background-size: 40px 40px;
 }
