@@ -132,12 +132,14 @@ function containsAllFragments(itemSearchString, searchString) {
 
 
 export async function checkOnleihe(item0, limit = 1) {
-  console.log('checkOnleihe:', item0, 'Limit:', limit);
+  console.log('checkOnleihe:', item0.searchString, 'Limit:', limit);
 
   let url;
   if (['HESS', 'DÜS'].includes(item0.kennung)) url = `http://${scraperHost}/search3`
   else if (['THÜR', 'GOET'].includes(item0.kennung)) url = `http://${scraperHost}/search2`
   else return [];
+
+console.log(url);
 
   const res = await fetch(url, {
     method: "POST",
@@ -216,7 +218,7 @@ export async function checkOnleihe(item0, limit = 1) {
     results.push({ status: "!", kennung: item0.kennung, searchString: item0.searchString, datum: "N/A", mediaType: item0.mediaType });
  */
 
-  console.log(results);
+  //console.log(results);
 
   return results;
 

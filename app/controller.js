@@ -120,7 +120,7 @@ export async function processJson(kennung, items) {
     const mediaType = item.typ;
     const mediaId = item.mediaId;
     const received = undefined;
-    const author = item.autor.replaceAll(/[\n ]+/g, " ");  //ggf. mehrere Autoren!
+    const author = item.autor.replaceAll(/[\n ]+/g, " ").replaceAll(",", "; ").replaceAll("  ", " ");  //ggf. mehrere Autoren!
     const title = item.titel.replaceAll(/[\n ]+/g, " ");
 
     let searchString = `${(author) ? author + "; " : ""}${title}`;
@@ -248,7 +248,7 @@ export async function importJsonAction(req, res) {
 };
 
 async function singleSearch(item) {
-  console.log(`singleSearch: item`, item);
+  console.log(`singleSearch: item`, item.searchString);
 
   let result = await checkCassis(item);  //{ datum: getToday(), status: "^", listType: 'donelist' }
   if (result) {
@@ -496,7 +496,6 @@ export async function bulkUpdate(items, wait) {  // wait in sec
       result = await updateItemById(result);
 
       if (result.status === "*") availCount++;
-      console.log("*****", result.datum, item.datum)
       if (result.datum !== datum) availDateCount++;
 
       if (item !== items[items.length - 1]) {
@@ -511,20 +510,24 @@ export async function bulkUpdate(items, wait) {  // wait in sec
     }
   }
 
-  const message = `bulkUpdate: eBooks, geprüft: ${checkedCount}, Datum geändert: ${availDateCount}, verfügbar: ${availCount}`;
+  const message = `bulkUpdate: eBooks, geprüft: ${items.length}, Datum geändert: ${availDateCount}, verfügbar: ${availCount}`;
   logger.info(message);
   return { success: message };
 }
 
 export const updateAction = async (req, res) => {
   try {
-    const { days } = req.body;
+
+    logger.info(`updateAction: days=${req.body}`);
+
+    const days = parseInt(req.body.days, 10);
+
     logger.info(`updateAction: days=${days}`);
 
     const items = await findEBooksToCheck(days);
     console.log('updateAction:', items.length, ' items gefunden')
 
-    const result = await bulkUpdate(items, 15);
+    const result = await bulkUpdate(items, items.length);
 
     res.status((result.success) ? 200 : 500).json(result);
 

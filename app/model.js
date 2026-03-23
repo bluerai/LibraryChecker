@@ -266,10 +266,8 @@ export async function findEBooksToCheck(days = 22) {
 
   // Berechne Cutoff-Datum
   const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() + parseInt(days));
+  cutoffDate.setDate(cutoffDate.getDate() + days);
   const cutOffDateStr = cutoffDate.toISOString().split('T')[0]
-
-  const maxUpdateTimestamp = new Date(Date.now() - 60 * 60 * 1000);
 
   // Finde relevante Items
   const items = await DATA_COLL.find(
@@ -277,7 +275,7 @@ export async function findEBooksToCheck(days = 22) {
       mediaType: 'eBook',
       listType: 'watchlist',
       datum: { $lte: cutOffDateStr },
-      lastUpdated: { $lte: maxUpdateTimestamp }
+      lastUpdated: { $lte: new Date(Date.now() - 60 * 60 * 1000) }      // finde nur items, die mehr als 1 Stunde nicht geändert wurden
     }
   ).sort({ datum: 1, searchString: 1 }).toArray();
 
@@ -589,7 +587,9 @@ async function convertAutor() {
     const newSearchString = `${newAuthor}; ${title}`;
 
     DATA_COLL.updateOne(
-      { _id: doc._id },
+      { _id: doc._id,
+        kennung: 'THÜR'
+      },
       {
         $set: {
           "mediaData.author": newAuthor,

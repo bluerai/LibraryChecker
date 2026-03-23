@@ -34,12 +34,11 @@
               input#mediaType.form-control.text-center(type="text" readonly class=item.listType || '' style="min-width: 80px"
                 title="Media-Typ" value=data.displayListType)
 
-          if item.mediaData && item.mediaData.received 
-            .row.pb-1
-              .col-6
-                label(for="received") Im Bestand seit:
-              .col-6
-                input#received.form-control.text-center.border-primary(type="text" readonly value=item.mediaData.received)
+          .row.pb-1
+            .col-6
+              label(for="received") Im Bestand seit:
+            .col-6
+              input#received.form-control.text-center.border-primary(type="text" readonly value=item.mediaData.received)
 
           .row.pb-1
             .col-6

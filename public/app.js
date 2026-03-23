@@ -347,6 +347,7 @@ async function updateItem(item, targetId) {  // Menu - aktualisieren
       document.getElementById('datum').value = data.options.item.datum;
       document.getElementById('received').value = data.options.item.received;
       document.getElementById('lastUpdated').value = data.options.item.lastUpdated || "N/A";
+      document.getElementById('searchString').value = data.options.item.searchString;
 
       const message = data.options.message || "Keine Änderung der Verfügbarkeit";
       showToast(message, 'info');
@@ -682,14 +683,9 @@ async function convertData() {
     });
 
     const data = await result.json();
-    if (result.ok) {
-      statusmsg.textContent = data.message;
-
-    } else {
-      statusmsg.textContent = "";
-      statusmsg.style.display = 'none';
-      showToast('convertData: ' + data.message, 'warning');
-    }
+    showToast('convertData: ' + data.message, 'warning');
+    statusmsg.textContent = "";
+    statusmsg.style.display = 'none';
 
   } catch (error) {
     showToast(statusText.textContent = 'convertData: ' + error.message, 'warning');
@@ -789,10 +785,11 @@ async function bulkUpdate() {
   insertTextWithSpinner(statusmsg, "Aktualisieren gestartet ... ");
 
   try {
+
     const result = await fetch('/upd', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
-      body: JSON.stringify({ days: parseInt(days) })
+      body: JSON.stringify({ days: days })
     });
 
     const data = await result.json();
@@ -801,11 +798,11 @@ async function bulkUpdate() {
     statusmsg.style.display = 'none';
 
     if (data.success) {
-      showToast('bulkUpdate: ' + data.success, 'warning');
+      showToast(data.success, 'warning');
       reloadList();
 
     } else {
-      showToast('bulkUpdate: ' + data.error, 'warning');
+      showToast(data.error, 'warning');
 
     }
   } catch (error) {
