@@ -289,12 +289,12 @@ async function singleSearch(item) {
 export async function upsertAction(req, res) {
   try {
     const { item: item0, targetId } = req.body;
-    console.log(`upsertAction: item0=`, item0, ", targetId=", targetId);
+    console.log(`upsertAction: item0=`, item0.kennung, item0.searchstring, ", targetId=", targetId);
 
     const oldDatum = item0.datum || undefined;
     let searchResult = await singleSearch(item0);
 
-    console.log("upsertAction", searchResult);
+    //console.log("upsertAction", searchResult);
 
     if (!searchResult) {
       return res.status(404).json({ message: 'upsertAction: No item found' });
@@ -510,7 +510,7 @@ export async function bulkUpdate(items, wait) {  // wait in sec
     }
   }
 
-  const message = `bulkUpdate: eBooks, geprüft: ${items.length}, Datum geändert: ${availDateCount}, verfügbar: ${availCount}`;
+  const message = `[${kennung}] Geprüfte Datensätze: ${items.length}, Datum geändert: ${availDateCount}, verfügbare E-Books: ${availCount}`;
   logger.info(message);
   return { success: message };
 }
@@ -540,9 +540,7 @@ export const updateAction = async (req, res) => {
 
 export async function jsonFileAction(req, res) {
   try {
-    if (!req.file) {
-      return res.status(400).send('jsonFileAction: No file uploaded');
-    }
+    if (!req.file) return res.status(400).send('jsonFileAction: No file uploaded')
 
     const { kennung } = req.body;
     const { buffer, originalname } = req.file;
@@ -550,16 +548,17 @@ export async function jsonFileAction(req, res) {
     logger.info(`jsonFileAction: kennung=${kennung}, file=${originalname}`);
 
     let items = [];
+    let itemsCount = 0;
 
     if (originalname.endsWith('.json')) {
       const stringArr = buffer.toString('utf-8').split('\n');
       for (const str of stringArr) {
         if (str && str.length > 0) {
           const item = JSON.parse(str);
-
           items.push(item);
         }
       }
+      itemsCount = items.length;
       items = await processJson(kennung, items);
     }
 
@@ -567,8 +566,9 @@ export async function jsonFileAction(req, res) {
       const result = await upsertItems(items);
 
       if (result.success) {
-        logger.info(`jsonFileAction: kennung=${kennung}: neue Einträge: ${result.insertedCount}, aktualisierte Einträge: ${result.updatedCount}`);
-        res.status(200).json({ success: `${kennung}: neue Einträge: ${result.insertedCount}, aktualisierte Einträge: ${result.updatedCount}` });
+        const msg = `[${kennung}] Hochgeladene Datensätze: ${itemsCount}, davon neu eingefügt: ${result.insertedCount}, vorhandene Datensätze aktualisiert: ${result.updatedCount}`;
+        logger.info(msg)
+        res.status(200).json({ success: msg });
 
       } else {
         logger.error('Fehler:', result.error);

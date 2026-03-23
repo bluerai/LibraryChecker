@@ -272,12 +272,27 @@ tbody tr:hover td {
   text-align: center;
 }
 
-#onl-button {
+.logoOnleiheTHÜR {
+  background: url("../onleihe72.png") no-repeat left center;
+  background-size: 40px 40px;
+}
+
+.logoOnleiheGOET {
+  background: url("../onleihe72.png") no-repeat left center;
+  background-size: 40px 40px;
+}
+
+.logoOnleiheHESS {
   background: url("../onl-logo72.png") no-repeat left center;
   background-size: 40px 40px;
 }
 
-#cassis-button {
+.logoOnleiheDÜS {
+  background: url("../onl-logo72.png") no-repeat left center;
+  background-size: 40px 40px;
+}
+
+.logoCassis {
   background: url("../cassis72.png") no-repeat left center;
   background-size: 40px 40px;
 }

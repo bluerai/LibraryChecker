@@ -125,13 +125,11 @@ function savePasswordAsHash(username, password, users) {
 }
 
 export function protect(request, response, next) {
-  if (request.path === '/') {
-    return next();
-  }
+  if (request.path === '/') return next();
 
   const token = (request.headers.authorization || request.query.token)?.split(' ')[1];
 
-  logger.debug("protect: Protected path: " + request.path);
+  //logger.debug("protect: Protected path: " + request.path);
 
   if (!token) {
     logger.debug("protect: No Token !!!");

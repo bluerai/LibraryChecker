@@ -342,8 +342,8 @@ async function updateItem(item, targetId) {  // Menu - aktualisieren
 
       const statusInput = document.getElementById('status');
       statusInput.outerHTML = `
-        <input class="form-control text-center statusCell me-2" id="status" type="text" style="width:40px 
-          readonly="readonly" title="Status" value="${data.options.item.status}">`
+        <input class="form-control text-center statusCell me-2" id="status" type="text" 
+        style="width:40px" readonly="readonly" title="Status" value="${data.options.item.status}">`
       document.getElementById('datum').value = data.options.item.datum;
       document.getElementById('received').value = data.options.item.received;
       document.getElementById('lastUpdated').value = data.options.item.lastUpdated || "N/A";
@@ -754,7 +754,6 @@ function jsonImportEventListener() {
     insertTextWithSpinner(statusmsg, "Datei-Import gestartet ... ");
 
     try {
-
       const result = await fetch('/upl/json', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${TOKEN}` },
@@ -762,15 +761,13 @@ function jsonImportEventListener() {
       });
 
       const data = await result.json();
-      if (result.ok) {
-        statusmsg.textContent = data.message;
-      } else {
-        showToast('fileImportEventListener: ' + data.message, 'warning');
-        statusmsg.textContent = "";
-        statusmsg.style.display = 'none';
-      }
+
+      statusmsg.textContent = "";
+      statusmsg.style.display = 'none';
+      showToast(data.success || data.error , 'warning');
+
     } catch (error) {
-      showToast('fileImportEventListener: Fehler: ' + error.message, 'warning');
+      showToast('jsonImportEventListener: Fehler: ' + error.message, 'warning');
     }
   })
 }

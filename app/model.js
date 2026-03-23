@@ -140,6 +140,7 @@ export async function changeItem(itemId, newSearchString, newPrio, newDatum) {
 
 
 export async function updateItemById(item) {
+  console.log("updateItemById: ", item.kennung, item.searchString);
   const itemId = item._id;
   const result = await DATA_COLL.findOneAndUpdate(
     { _id: new ObjectId(itemId) },
@@ -164,12 +165,13 @@ export async function updateItemById(item) {
     }
   );
 
-  logger.debug("upsertItemById: " + JSON.stringify(result))
+  //logger.debug("updateItemById: " + JSON.stringify(result))
   return result;
 }
 
 
 export async function upsertItemById(item) {
+  console.log("upsertItemById: ", item.kennung, item.searchString);
   const itemId = item._id;
   const result = await DATA_COLL.findOneAndUpdate(
     { _id: new ObjectId(itemId) },
@@ -194,7 +196,7 @@ export async function upsertItemById(item) {
     }
   );
 
-  logger.debug("upsertItemById: " + JSON.stringify(result))
+  //logger.debug("upsertItemById: " + JSON.stringify(result))
   return result;
 }
 
