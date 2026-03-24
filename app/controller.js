@@ -3,7 +3,7 @@ import { push } from '../utils/pushover.js';
 
 import {
   getItem, findItemId, findItem, findEBooksToCheck, findItemsToClear, findSiblings, changeItem,
-  moveToList, upsertItem, upsertItemById, updateItemById, deleteItem, findItems, upsertItems,
+  moveToList, upsertItem, updateItemById, deleteItem, findItems, upsertItems,
   findSearchItems, deleteSearchItem, upsertSearchItem, convert
 } from './model.js';
 import { checkCassis, checkOnleihe, checkDone, checkReserved, searchCassis, getToday } from '../utils/searchForBooks.js';
@@ -286,23 +286,20 @@ async function singleSearch(item) {
 }
 
 
-export async function upsertAction(req, res) {
+export async function updateItemAction(req, res) {
   try {
-    const { item: item0, targetId } = req.body;
-    console.log(`upsertAction: item0=`, item0.kennung, item0.searchstring, ", targetId=", targetId);
+    const { item: item0, targetId, upsert } = req.body;
+    console.log(`updateItemAction: item0=`, item0.kennung, item0.searchstring, ", targetId=", targetId);
 
     const oldDatum = item0.datum || undefined;
     let searchResult = await singleSearch(item0);
-
-    //console.log("upsertAction", searchResult);
-
     if (!searchResult) {
-      return res.status(404).json({ message: 'upsertAction: No item found' });
+      return res.status(404).json({ message: 'updateItemAction: No item found' });
     }
 
-    const item = await upsertItemById(searchResult);
+    const item = await updateItemById(searchResult, upsert);
     if (!item) {
-      return res.status(404).json({ message: 'upsertAction: item not saved' });
+      return res.status(404).json({ message: 'updateItemAction: item not saved' });
     }
 
     let message;
@@ -317,7 +314,7 @@ export async function upsertAction(req, res) {
     renderResultslistEntry(res, item, targetId, options)
 
   } catch (err) {
-    errorHandler(err, 'upsertAction', res);
+    errorHandler(err, 'updateItemAction', res);
   }
 }
 
@@ -510,29 +507,29 @@ export async function bulkUpdate(items, wait) {  // wait in sec
     }
   }
 
-  const message = `[${kennung}] Geprüfte Datensätze: ${items.length}, Datum geändert: ${availDateCount}, verfügbare E-Books: ${availCount}`;
+  const message = `Geprüfte Datensätze: ${items.length}, Datum geändert: ${availDateCount}, verfügbare E-Books: ${availCount}`;
   logger.info(message);
   return { success: message };
 }
 
-export const updateAction = async (req, res) => {
+export const bulkUpdateAction = async (req, res) => {
   try {
 
-    logger.info(`updateAction: days=${req.body}`);
+    logger.info(`bulkUpdateAction: days=${req.body}`);
 
     const days = parseInt(req.body.days, 10);
 
-    logger.info(`updateAction: days=${days}`);
+    logger.info(`bulkUpdateAction: days=${days}`);
 
     const items = await findEBooksToCheck(days);
-    console.log('updateAction:', items.length, ' items gefunden')
+    console.log('bulkUpdateAction:', items.length, ' items gefunden')
 
     const result = await bulkUpdate(items, items.length);
 
     res.status((result.success) ? 200 : 500).json(result);
 
   } catch (err) {
-    errorHandler(err, 'updateAction', res);
+    errorHandler(err, 'bulkUpdateAction', res);
   }
 };
 
@@ -645,7 +642,7 @@ export async function itemAction(req, res) {
 
     let cassisUrl = cassisRemoteAdr + encodeURIComponent(item.searchString);
 
-    console.log("cassisUrl", cassisUrl)
+    console.log("itemAction: item=", item)
 
     let onlUrl;
     if (['HESS', 'DÜS'].includes(item.kennung)) {

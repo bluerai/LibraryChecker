@@ -139,7 +139,7 @@ export async function changeItem(itemId, newSearchString, newPrio, newDatum) {
 }
 
 
-export async function updateItemById(item) {
+export async function updateItemById(item, upsert = false) {
   console.log("updateItemById: ", item.kennung, item.searchString);
   const itemId = item._id;
   const result = await DATA_COLL.findOneAndUpdate(
@@ -160,7 +160,7 @@ export async function updateItemById(item) {
       }
     },
     {
-      upsert: false,
+      upsert,
       returnDocument: 'after'
     }
   );
@@ -169,36 +169,6 @@ export async function updateItemById(item) {
   return result;
 }
 
-
-export async function upsertItemById(item) {
-  console.log("upsertItemById: ", item.kennung, item.searchString);
-  const itemId = item._id;
-  const result = await DATA_COLL.findOneAndUpdate(
-    { _id: new ObjectId(itemId) },
-    {
-      $set: {
-        kennung: item.kennung,
-        searchString: item.searchString,
-        mediaType: item.mediaType,
-        datum: item.datum,
-        status: item.status,
-        listType: item.listType,
-        mediaType: item.mediaType,
-        mediaData: item.mediaData,
-        received: item.received,
-        prio: item.prio,
-        lastUpdated: new Date()
-      }
-    },
-    {
-      upsert: true,
-      returnDocument: 'after'
-    }
-  );
-
-  //logger.debug("upsertItemById: " + JSON.stringify(result))
-  return result;
-}
 
 export async function upsertItem(item) {
   const collection = DATA_COLL;
@@ -589,7 +559,8 @@ async function convertAutor() {
     const newSearchString = `${newAuthor}; ${title}`;
 
     DATA_COLL.updateOne(
-      { _id: doc._id,
+      {
+        _id: doc._id,
         kennung: 'THÜR'
       },
       {

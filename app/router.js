@@ -4,7 +4,7 @@ import { checkerCronJob, fullCheckerCronJob, queryCronJob } from '../utils/cron.
 import { logger } from '../utils/log.js';
 
 import {
-  homeAction, listAction, jsonFileAction, importJsonAction, upsertAction, updateAction, markAsDoneAction, markAsReservedAction,
+  homeAction, listAction, jsonFileAction, importJsonAction, updateItemAction as updateItemAction, bulkUpdateAction as bulkUpdateAction, markAsDoneAction, markAsReservedAction,
   resetAction, clearAction, deleteAction, itemAction, fullSearchAction, changeAction, upsertSearchItemAction, convertAction,
   getWaitlistAction, deleteSearchItemAction, updWaitListAction
 } from './controller.js';
@@ -17,8 +17,9 @@ router.get('/', homeAction);
 router.get('/list', listAction);
 router.post('/imp/json', importJsonAction);
 router.post('/menu', itemAction);
-router.post('/upd', updateAction);  //bulkUpdate
-router.post('/upsert', upsertAction);  //updateItem, importItem, saveSearchItem
+router.post('/update', bulkUpdateAction);  //bulkUpdate
+router.post('/updItem', updateItemAction);  //updateItem, importItem, saveSearchItem
+router.post('/upl/json', upload.single('jsonlistFile'), jsonFileAction);
 router.post('/done', markAsDoneAction);
 router.post('/change', changeAction);
 router.post('/reserved', markAsReservedAction);
@@ -26,7 +27,6 @@ router.post('/reset', resetAction);
 router.post('/clear', clearAction);
 router.post('/del', deleteAction);
 router.post('/search', fullSearchAction);
-router.post('/upl/json', upload.single('jsonlistFile'), jsonFileAction);
 
 router.post('/conv', convertAction);
 router.post('/waitlist/upsert', upsertSearchItemAction);

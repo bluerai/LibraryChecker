@@ -56,9 +56,9 @@ table#resultlist.table.table-stripedxxx
           
           if item.kennung !== "CASSIS"
             .typebox.text-primary.py-0.px-1(
-              class=`${ (daysFromToday(item.mediaData.received) <= 14) ? "newEntry" : ""}`)
+              class=`${ (daysFromToday(item.received) <= 14) ? "newEntry" : ""}`)
               p= `${item.mediaType} - `
-                span.receivedDate= `${item.mediaData.received}`
+                span.receivedDate= `${item.received}`
 
           .datebox.text-primary.pb-0.mb-0
             p= formatDate(item.lastUpdated)     

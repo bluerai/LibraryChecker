@@ -278,7 +278,7 @@ async function openItemMenu(item, targetId) {
   if (item.kennung === 'CASSIS') return;
 
   try {
-    const result = await fetch("/menu/", {
+    const result = await fetch("/menu", {
       method: "POST",
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
       body: JSON.stringify({ item, targetId, listpath: LIST_FETCHPATH })
@@ -311,8 +311,8 @@ function closeItemMenu() {  // menu - Schließen
   }
 }
 
-const kennungen = ['DÜS', 'HESS', 'GOET', 'THÜR'];
 
+const kennungen = ['DÜS', 'HESS', 'GOET', 'THÜR'];
 
 async function updateItem(item, targetId) {  // Menu - aktualisieren
   if (!kennungen.includes(item.kennung)) {
@@ -328,7 +328,7 @@ async function updateItem(item, targetId) {  // Menu - aktualisieren
     item.searchString = document.getElementById('searchString').value;
     if (!item.listType) item.listType = 'watchlist';
 
-    const result = await fetch('/upsert/', {
+    const result = await fetch('/updItem', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
       body: JSON.stringify({ item, targetId })
@@ -375,10 +375,11 @@ async function importItem(item, targetId, event) {  // Menu - übernehmen
     }
     if (!item.listType) item.listType = 'watchlist';
 
-    const result = await fetch('/upsert/', {
+    const upsert = true;
+    const result = await fetch('/updItem', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
-      body: JSON.stringify({ item, targetId })
+      body: JSON.stringify({ item, targetId, upsert })
     });
 
     const data = await result.json();
@@ -764,7 +765,7 @@ function jsonImportEventListener() {
 
       statusmsg.textContent = "";
       statusmsg.style.display = 'none';
-      showToast(data.success || data.error , 'warning');
+      showToast(data.success || data.error, 'warning');
 
     } catch (error) {
       showToast('jsonImportEventListener: Fehler: ' + error.message, 'warning');
@@ -783,7 +784,7 @@ async function bulkUpdate() {
 
   try {
 
-    const result = await fetch('/upd', {
+    const result = await fetch('/update', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
       body: JSON.stringify({ days: days })

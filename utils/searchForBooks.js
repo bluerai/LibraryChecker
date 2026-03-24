@@ -93,10 +93,10 @@ export async function checkReserved(kennung, searchString) {
   return await findItemReserved(kennung, searchString);
 }
 
-export async function searchCheckLib(searchString) {
+/* export async function searchCheckLib(searchString) {
   searchString = searchString.split(' [')[0];
   return await findAllItems(searchString);
-}
+} */
 
 // Normalisierung: Kleinbuchstaben, Sonderzeichen durch Leerzeichen ersetzen
 const whitespace_chars = /[\/\,\.\|\ \*\?\!\:\;\(\)\[\]\&\"\+\-\_\%]+/g;
@@ -130,16 +130,19 @@ function containsAllFragments(itemSearchString, searchString) {
 
 }
 
-
 export async function checkOnleihe(item0, limit = 1) {
   console.log('checkOnleihe:', item0.searchString, 'Limit:', limit);
 
   let url;
-  if (['HESS', 'DÜS'].includes(item0.kennung)) url = `http://${scraperHost}/search3`
-  else if (['THÜR', 'GOET'].includes(item0.kennung)) url = `http://${scraperHost}/search2`
+  if (['HESS', 'DÜS'].includes(item0.kennung))
+    url = (limit == 1) ? `http://${scraperHost}/details` : `http://${scraperHost}/search3`
+
+  else if (['THÜR', 'GOET'].includes(item0.kennung))
+    url = `http://${scraperHost}/search2`
+
   else return [];
 
-console.log(url);
+  console.log(url);
 
   const res = await fetch(url, {
     method: "POST",
