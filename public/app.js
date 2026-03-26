@@ -127,6 +127,7 @@ async function getList(options) { // options:  { listType, kennung, sort, dir }
 
     if (result.ok) {
       const data = await result.json();
+      document.getElementById('waitlistMenu').style.display = 'none';
       document.getElementById('table_container').innerHTML = data.html;
       document.getElementById('table_container').style.display = 'block';
       document.querySelector('#listButtons .active')?.classList.remove('active');
@@ -944,7 +945,7 @@ async function saveSearchItem() {
 
       filterTable(FILTER_TEXT, FILTER_PRIO, FILTER_RESERV);
 
-      document.getElementById('itemlist_panel').scrollIntoView({ block: 'start' });
+      //??document.getElementById('itemlist_panel').scrollIntoView({ block: 'start' });
       setTimeout(() => statusmsg.style.display = 'none', 300);
     } else {
       showToast('saveSearchItem: ' + data.message, 'warning');
@@ -970,11 +971,13 @@ async function getWaitlist(sort = 'targetDate', dir = 'asc') {
 
     const data = await result.json();
     if (result.ok) {
+      document.getElementById('waitlistMenu').style.display = 'block';
+      toggleTab('searchTab', true)
       document.getElementById('table_container').innerHTML = data.html;
 
-      filterTable(FILTER_TEXT);
+      filterTable();
 
-      document.getElementById('itemlist_panel').scrollIntoView({ block: 'start' });
+      //??document.getElementById('itemlist_panel').scrollIntoView({ block: 'start' });
       document.querySelector('#listButtons .active')?.classList.remove('active');
       document.getElementById('waitlist').classList.add('active')
 
@@ -1011,7 +1014,7 @@ async function updateWaitlist(sort = 'targetDate', dir = 'asc') {
 
       filterTable(FILTER_TEXT, FILTER_PRIO, FILTER_RESERV);
 
-      document.getElementById('itemlist_panel').scrollIntoView({ block: 'start' });
+      //??document.getElementById('itemlist_panel').scrollIntoView({ block: 'start' });
     } else {
       showToast('updateWaitlist: ' + data.message, 'warning');
     }

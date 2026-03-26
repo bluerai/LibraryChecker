@@ -21,22 +21,25 @@ export const queryCronJob =
     process.env.TZ || "Europe/Berlin"// timeZone
   );
 
+function checkerJob22() { checkerJob(22, ["HESS", "DÜS"]) }
 
 export const checkerCronJob =
   (process.env.CRON_CHECKER) &&
   new CronJob(
     process.env.CRON_CHECKER, // cronTime
-    checkerJob, // onTick
+    checkerJob22, // onTick
     null, // onComplete
     false, // start
     process.env.TZ || "Europe/Berlin"// timeZone
   );
 
+function checkerJob999() { checkerJob(999, ["HESS", "DÜS"]) }
+
 export const fullCheckerCronJob =
   (process.env.CRON_FULLCHECKER) &&
   new CronJob(
     process.env.CRON_FULLCHECKER, // cronTime
-    fullCheckerJob, // onTick
+    checkerJob999, // onTick
     null, // onComplete
     false, // start
     process.env.TZ || "Europe/Berlin"// timeZone
@@ -74,22 +77,22 @@ export const targetSearchCronJob2 =
     process.env.TZ || "Europe/Berlin"// timeZone
   );
 
-const targets = [
-  //{ kennung: 'HESS', count: 200 },
-  //{ kennung: 'DÜS', count: 100 },
-  //{ kennung: "GOET", count: 50 },
-  // kennung: 'THÜR', count: 300 }
-];
-
-async function checkerJob() {        //Einzelprüfungen
+async function checkerJob(days, kennungen) {        //Einzelprüfungen
   if (await checkCassisHealth()) {
     try {
-      const items = await findEBooksToCheck(22)  // die nächsten 22 Tage
+      const items = await findEBooksToCheck(days, kennungen)  // die nächsten days Tage
       logger.info(`Cron: checkerJob startet. Es werden ${items.length} Einträge überprüft.`);
-      const { checkedCount, availCount } = await bulkUpdate(items, 32);  //wait in sec zwischen den Überprüfungen
-      const message = `Cron: ${checkedCount} Bücher überprüft - ${availCount} Bücher sind aktuell verfügbar`;
-      logger.info(message);
-      push.sysnote(message, "Library Checker Prüfung bis 22. Tag");
+      const data = await bulkUpdate(items, 55);  //wait in sec zwischen den Überprüfungen
+
+      if (data.success) {
+        logger.info(data.success);
+        push.sysnote(data.success, `Library Checker Aktualisierung bis ${days} Tage`);
+
+      } else {
+        logger.error(data.error);
+        push.syswarn(message, `Library Checker Aktualisierung bis ${days} Tage`);
+      }
+
     } catch (error) {
       const message = 'Cron: checkerJob fehlgeschlagen": ' + error.message;
       logger.error(message);
@@ -98,28 +101,6 @@ async function checkerJob() {        //Einzelprüfungen
     }
   } else {
     push.sysinfo(`checkerJob: Error accessing Cassis host`, `Check_lib`);
-  }
-}
-
-
-async function fullCheckerJob() {
-  if (await checkCassisHealth()) {
-    try {
-      const items = await findEBooksToCheck(9999);
-      logger.info(`Cron: checkerJob startet. Es werden ${items.length} Einträge überprüft.`);
-      const { checkedCount, availCount } = await bulkUpdate(items, 32); //wait in sec zwischen den Überprüfungen
-      const message = `Bücher: überprüft: ${checkedCount}, davon verfügbar: ${availCount}`;
-      logger.info(message);
-      push.sysnote(message, "Library Checker Komplett-Prüfung");
-
-    } catch (error) {
-      const message = 'Cron: fullCheckerJob fehlgeschlagen": ' + error.message;
-      logger.error(message);
-      logger.debug(error.stack);
-      push.syserror(message);
-    }
-  } else {
-    push.sysinfo(`fullCheckerJob: Error accessing Cassis host`, `Check_lib`);
   }
 }
 

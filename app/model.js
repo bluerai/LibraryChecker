@@ -172,6 +172,8 @@ export async function updateItemById(item, upsert = false) {
 
 export async function upsertItem(item) {
   const collection = DATA_COLL;
+  if (item._id === undefined) delete item._id;
+  
   // Suchkriterium (Composite Key)
   const filter = {
     searchString: item.searchString,
@@ -234,7 +236,7 @@ export async function findItemsToClear(monthAgo) {
 }
 
 
-export async function findEBooksToCheck(days = 22) {
+export async function findEBooksToCheck(days = 22, kennungen = ['DÜS', 'THÜR', 'HESS', 'GOET']) {
 
   // Berechne Cutoff-Datum
   const cutoffDate = new Date();
@@ -245,6 +247,7 @@ export async function findEBooksToCheck(days = 22) {
   const items = await DATA_COLL.find(
     {
       mediaType: 'eBook',
+      kennung: { $in: kennungen },
       listType: 'watchlist',
       datum: { $lte: cutOffDateStr },
       lastUpdated: { $lte: new Date(Date.now() - 60 * 60 * 1000) }      // finde nur items, die mehr als 1 Stunde nicht geändert wurden
@@ -398,9 +401,6 @@ export async function findSearchItems(filterOptions, sortOptions = {}) {
 
   try {
     let result = collection.find(filter).sort(sortOptions);
-
-    result = result;
-
     return await result.toArray();
 
   } catch (error) {

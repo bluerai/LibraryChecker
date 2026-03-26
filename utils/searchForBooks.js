@@ -135,7 +135,9 @@ export async function checkOnleihe(item0, limit = 1) {
 
   let url;
   if (['HESS', 'DÜS'].includes(item0.kennung))
-    url = (limit == 1) ? `http://${scraperHost}/details` : `http://${scraperHost}/search3`
+    url = ((limit !== 1) || (['ePaper', 'eMagazine'].includes(item0.mediaType))) ?
+      `http://${scraperHost}/search3` :
+      `http://${scraperHost}/details`;
 
   else if (['THÜR', 'GOET'].includes(item0.kennung))
     url = `http://${scraperHost}/search2`
@@ -151,9 +153,7 @@ export async function checkOnleihe(item0, limit = 1) {
   });
 
   const data = await res.json();
-
   if (data.error) throw new Error(data.error)
-
   if (data.length == 0) return data;
 
   console.log('checkOnleihe: data=', data);
@@ -163,11 +163,8 @@ export async function checkOnleihe(item0, limit = 1) {
   const today = getToday();
 
   for (let index = 0; index < data.length; index++) {
-
     const item = data[index];
-
     let available = item.datum;
-
     let status = "";
 
     if (available === "") {
@@ -192,7 +189,6 @@ export async function checkOnleihe(item0, limit = 1) {
     if (containsAllFragments(itemSearchString, item0.searchString)) {
 
       const mediaData = {
-        available,
         author,
         title,
         kennung: item0.kennung,
@@ -221,7 +217,7 @@ export async function checkOnleihe(item0, limit = 1) {
     results.push({ status: "!", kennung: item0.kennung, searchString: item0.searchString, datum: "N/A", mediaType: item0.mediaType });
  */
 
-  //console.log(results);
+  console.log(results);
 
   return results;
 

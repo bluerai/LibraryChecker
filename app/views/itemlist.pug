@@ -17,7 +17,7 @@ table.table.table-striped
 
           .col-2.text-end
             button.btn.btn-sm.btn-outline-secondary.m-1(title="neu laden" onclick="reloadList()")
-              i.bi.bi-arrow-clockwise(style="font-size: 18px")
+              i.bi.bi-arrow-counterclockwise(style="font-size: 18px")
 
     tr.info(class=listType)
       th.py-0
@@ -64,7 +64,7 @@ table.table.table-striped
                 .dropdown-item nach Änderungsdatum
               li#sortAvailDate(onclick = `getList({listType: '${listType}', kennung: '${selectedKennung}', sort: 'datum', dir: '${sortField === "datum" ? sortDirection : "desc"}'})`)
                 .dropdown-item nach Verfügbarkeitsdatum
-              li#sortInsDate(onclick = `getList({listType: '${listType}', kennung: '${selectedKennung}', sort: 'received', dir: '${sortField === "mediaData.received" ? sortDirection : "asc"}'})`)
+              li#sortInsDate(onclick = `getList({listType: '${listType}', kennung: '${selectedKennung}', sort: 'received', dir: '${sortField === "received" ? sortDirection : "asc"}'})`)
                 .dropdown-item nach Einstelldatum
               li#sortInsDate(onclick = `getList({listType: '${listType}', kennung: '${selectedKennung}', sort: 'mediaData.author', dir: '${sortField === "mediaData.author" ? sortDirection : "desc"}'})`)
                 .dropdown-item nach Autor

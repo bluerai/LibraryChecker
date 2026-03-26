@@ -78,7 +78,7 @@ export async function homeAction(req, res) {
 
 export async function listAction(req, res) {
   try {
-    logger.info(`listAction: path=${req.path}, query=${JSON.stringify(req.query)}`);
+    logger.debug(`listAction: path=${req.path}, query=${JSON.stringify(req.query)}`);
 
     const { listType, kennung, sort, dir } = req.query;
     const sortOrder = dir === 'asc' ? 1 : -1;
@@ -742,8 +742,11 @@ export async function updWaitListAction(req, res) {
   try {
     logger.info(`updWaitListAction`);
 
-    const items0 = await findSearchItems({ 'targetDate': getToday() });
-    await updateSearchItems(items0)
+    const searchItems = await findSearchItems({ 'targetDate': getToday() });
+
+    console.log('updWaitListAction', searchItems);
+
+    await updateSearchItems(searchItems)
 
     const items = await findSearchItems({}, { 'status': -1, 'targetDate': 1 });
 
@@ -785,6 +788,7 @@ export async function updateSearchItems(items) {
 
             result.listType = 'watchlist';
             result.prio = true;
+            console.log(result);
             upsertItem(result);
 
             item.available.push(kennung);
@@ -797,9 +801,11 @@ export async function updateSearchItems(items) {
 
       }
     }
+
     upsertSearchItem(item);
-    //console.log(item);
+    console.log(item);
   }
+
 }
 
 export async function deleteSearchItemAction(req, res) {
