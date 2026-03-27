@@ -131,11 +131,11 @@ function containsAllFragments(itemSearchString, searchString) {
 }
 
 export async function checkOnleihe(item0, limit = 1) {
-  console.log('checkOnleihe:', item0.searchString, 'Limit:', limit);
+  console.log('checkOnleihe:', item0.kennung, item0.searchString, 'Limit:', limit);
 
   let url;
   if (['HESS', 'DÜS'].includes(item0.kennung))
-    url = ((limit !== 1) || (['ePaper', 'eMagazine'].includes(item0.mediaType))) ?
+    url = ((limit !== 1) || (['ePaper', 'eMagazine'].includes(item0.mediaType)) || !(item0.mediaData?.mediaId) || item0.mediaData.mediaId.length <= 12) ?
       `http://${scraperHost}/search3` :
       `http://${scraperHost}/details`;
 
@@ -185,7 +185,7 @@ export async function checkOnleihe(item0, limit = 1) {
       searchSpec = regExpMatch ? " " + regExpMatch[0] : "";
     }
     const itemSearchString = `${(author) ? author + "; " : ""}${title}${searchSpec}`;
-
+    
     if (containsAllFragments(itemSearchString, item0.searchString)) {
 
       const mediaData = {
@@ -217,7 +217,7 @@ export async function checkOnleihe(item0, limit = 1) {
     results.push({ status: "!", kennung: item0.kennung, searchString: item0.searchString, datum: "N/A", mediaType: item0.mediaType });
  */
 
-  console.log(results);
+  //console.log(results);
 
   return results;
 

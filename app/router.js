@@ -17,8 +17,8 @@ router.get('/', homeAction);
 router.get('/list', listAction);
 router.post('/imp/json', importJsonAction);
 router.post('/menu', itemAction);
-router.post('/update', bulkUpdateAction);  //bulkUpdate
-router.post('/updItem', updateItemAction);  //updateItem, importItem, saveSearchItem
+router.post('/update', bulkUpdateAction);
+router.post('/updItem', updateItemAction);
 router.post('/upl/json', upload.single('jsonlistFile'), jsonFileAction);
 router.post('/done', markAsDoneAction);
 router.post('/change', changeAction);

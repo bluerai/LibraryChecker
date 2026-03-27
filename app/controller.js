@@ -289,20 +289,23 @@ async function singleSearch(item) {
 export async function updateItemAction(req, res) {
   try {
     const { item: item0, targetId, upsert } = req.body;
-    console.log(`updateItemAction: item0=`, item0.kennung, item0.searchstring, ", targetId=", targetId);
+    console.log(`updateItemAction: item0=`, item0.kennung, item0.searchString, ", targetId=", targetId);
 
     const oldDatum = item0.datum || undefined;
     let searchResult = await singleSearch(item0);
     if (!searchResult) {
       return res.status(404).json({ message: 'updateItemAction: No item found' });
     }
-
+    console.log(searchResult);
     const item = await updateItemById(searchResult, upsert);
     if (!item) {
       return res.status(404).json({ message: 'updateItemAction: item not saved' });
     }
 
     let message;
+
+    console.log("item0=", item0);
+    console.log("item=", item);
     if (item.status === "*") {
       message = `${item.mediaType} jetzt ausleihbar!`
     } else if (oldDatum !== item.datum) {
@@ -480,8 +483,8 @@ export async function deleteAction(req, res) {
 
 //*********************** Menu actions ***********************************/
 
-export async function bulkUpdate(items, wait) {  // wait in sec
-  logger.info(`bulkUpdate: items.length=${items.length}, wait=${wait}`);
+export async function bulkUpdate(items, minWait) {   //minWait in sec zwischen den Überprüfungen, maxWait = 5 * minWait
+  logger.info(`bulkUpdate: items.length=${items.length}, wait=${minWait}`);
   let availCount = 0;
   let availDateCount = 0;
 
@@ -497,8 +500,10 @@ export async function bulkUpdate(items, wait) {  // wait in sec
 
       if (item !== items[items.length - 1]) {
         // Warte (außer beim letzten Item)
-        await new Promise(resolve => setTimeout(resolve, Math.floor(wait + Math.random(wait) * 1000)));
+        const delay = minWait * 1000 + Math.random() * 4000;
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
+
     } catch (err) {
       const message = `bulkUpdate: Fehler bei: "${item.kennung}" "${item.searchString}":`
       logger.error(message, err);
@@ -524,7 +529,7 @@ export const bulkUpdateAction = async (req, res) => {
     const items = await findEBooksToCheck(days);
     console.log('bulkUpdateAction:', items.length, ' items gefunden')
 
-    const result = await bulkUpdate(items, items.length);
+    const result = await bulkUpdate(items, 8);
 
     res.status((result.success) ? 200 : 500).json(result);
 

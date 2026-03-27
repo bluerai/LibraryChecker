@@ -82,7 +82,7 @@ async function checkerJob(days, kennungen) {        //Einzelprüfungen
     try {
       const items = await findEBooksToCheck(days, kennungen)  // die nächsten days Tage
       logger.info(`Cron: checkerJob startet. Es werden ${items.length} Einträge überprüft.`);
-      const data = await bulkUpdate(items, 55);  //wait in sec zwischen den Überprüfungen
+      const data = await bulkUpdate(items, 24);  //minWait in sec zwischen den Überprüfungen maxWait = 5 * minWait
 
       if (data.success) {
         logger.info(data.success);
@@ -90,7 +90,7 @@ async function checkerJob(days, kennungen) {        //Einzelprüfungen
 
       } else {
         logger.error(data.error);
-        push.syswarn(message, `Library Checker Aktualisierung bis ${days} Tage`);
+        push.syswarn(data.error, `Library Checker Aktualisierung bis ${days} Tage`);
       }
 
     } catch (error) {
