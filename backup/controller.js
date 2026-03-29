@@ -1,7 +1,7 @@
 import { BackupService } from './model.js';
 
 import { push } from '../utils/pushover.js';
-import { logger } from '../utils/log.js';
+import { log } from '../utils/log.js';
 
 
 export class BackupController {

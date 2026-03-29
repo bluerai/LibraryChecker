@@ -704,15 +704,12 @@ async function importQueryData() {
     document.querySelectorAll('input[name="kennung"]').forEach(radio => {
       if (radio.checked) kennung = radio.value
     })
-    let count;
-    document.querySelectorAll('input[name="count"]').forEach(radio => {
-      if (radio.checked) count = radio.value
-    })
 
-    const result = await fetch('/imp/html', {
+    if (!kennung) showToast('Online-Abfrage: Bitte Bibliothekl auswählen. ', 'warning');
+    const result = await fetch('/import', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
-      body: JSON.stringify({ kennung, count })
+      body: JSON.stringify({ kennung })
     });
 
     const data = await result.json();

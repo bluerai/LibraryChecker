@@ -3,12 +3,12 @@ import { BackupController } from './controller.js';
 import { backupCronJob } from '../utils/cron.js';
 import path from 'path';
 import fs from 'fs';
-import { logger } from '../utils/log.js';
+import { log } from '../utils/log.js';
 
 import { BackupService } from './model.js';
 
 const router = express.Router();
-const backupDir = process.env.CHECKLIB_BACKUPDIR || path.join(process.env.CHECKLIB_DATADIR, 'backup');
+const backupDir = process.env.CHECKLIB_BACKUPDIR || path.join(process.env.DATADIR, 'backup');
 
 // Backup erstellen
 router.post('/', async (req, res) => {
@@ -16,7 +16,7 @@ router.post('/', async (req, res) => {
     const result = await BackupService.backupDatabase();
     res.json(result);
   } catch (error) {
-    console.log("error: ", error);
+    log.error("error: ", error);
     res.status(500).json({
       success: false,
       message: 'Backup creation failed',
@@ -34,7 +34,7 @@ router.get('/', async (req, res) => {
       backups: backups.sort((a, b) => b.date - a.date)
     });
   } catch (error) {
-    console.log("error: ", error);
+    log.error("error: ", error);
     res.status(500).json({
       success: false,
       message: 'Failed to list backups',
@@ -49,7 +49,7 @@ router.post('/:filename/restore', async (req, res) => {
     const result = await BackupService.restoreBackup(req.params.filename);
     res.json(result);
   } catch (error) {
-    console.log("error: ", error);
+    log.error("error: ", error);
     res.status(500).json({
       success: false,
       message: 'Restore failed',
@@ -65,7 +65,7 @@ router.delete('/:filename', async (req, res) => {
       if (!error) res.json({ success: true });
     } );
   } catch (error) {
-    console.log("error: ", error);
+    log.error("error: ", error);
     res.status(500).json({
       success: false,
       message: 'Delete failed',
@@ -80,7 +80,7 @@ router.get('/:filename/download', async (req, res) => {
     const filePath = path.join(backupDir, req.params.filename);
     res.download(filePath);
   } catch (error) {
-    console.log("error: ", error);
+    log.error("error: ", error);
     res.status(500).json({
       success: false,
       message: 'Download failed',
@@ -93,11 +93,11 @@ router.get('/:filename/download', async (req, res) => {
 // Automatische Backups aktivieren
 (backupCronJob) && backupCronJob.start();
 
-if (logger.isLevelEnabled('debug')) {
+if (log.isLevelEnabled('debug')) {
   try {
-    (backupCronJob) && logger.debug(`Cron: Next backupCronJob: ${backupCronJob.nextDate().toISO()}`);
+    (backupCronJob) && log.debug(`Cron: Next backupCronJob: ${backupCronJob.nextDate().toISO()}`);
   } catch (error) {
-    logger.error(error)
+    log.error(error)
   }
 }
 

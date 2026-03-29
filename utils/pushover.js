@@ -1,10 +1,10 @@
 'use strict';
 
 import fs from 'fs-extra';
-import { logger } from './log.js';
+import {log } from './log.js';
 import path from 'path';
 
-const messagingfile = path.join(path.resolve(process.env.CHECKLIB_DATADIR || './data'), 'config', 'pushover.json');
+const messagingfile = path.join(path.resolve(process.env.DATADIR || './data'), 'config', 'pushover.json');
 
 class PushMessage {
   constructor(credentials) {
@@ -86,13 +86,13 @@ if (messagingfile) {
 
         if (response.ok) {
           const data = await response.json();
-          logger.silly(`Pushover (${userKey}): message successfully sent: ` + JSON.stringify(data));
-          logger.debug(`Pushover (${userKey}): message successfully sent. title=${title}, msg=${msg}, sound=${sound})`);
+          log.silly(`Pushover (${userKey}): message successfully sent: ` + JSON.stringify(data));
+          log.debug(`Pushover (${userKey}): message successfully sent. title=${title}, msg=${msg}, sound=${sound})`);
         } else {
-          logger.error(`Pushover (${userKey}): ${response.statusText} (#${response.status})`);
+          log.error(`Pushover (${userKey}): ${response.statusText} (#${response.status})`);
         }
       } catch (error) {
-        logger.error(error);
+        log.error(error);
       }
     }
   }
@@ -103,7 +103,7 @@ if (messagingfile) {
       cred = await fs.readJson(messagingfile);
     }
   } catch (error) {
-    logger.error(error);
+    log.error(error);
   }
 
   Push = new Pushover(cred);
@@ -112,5 +112,5 @@ if (messagingfile) {
   }
 }
 
-logger.info("Messaging by " + Push.name);
+log("Messaging by " + Push.name);
 export const push = Push;

@@ -3,11 +3,16 @@ import { push } from '../utils/pushover.js';
 
 import {
   getItem, findItemId, findItem, findEBooksToCheck, findItemsToClear, findSiblings, changeItem,
-  moveToList, upsertItem, updateItemById, deleteItem, findItems, upsertItems,
-  findSearchItems, deleteSearchItem, upsertSearchItem, convert
+  moveToList, upsertItem, updateItemById, deleteItem, findItems, upsertItems, findSearchItems,
+  deleteSearchItem, upsertSearchItem
 } from './model.js';
-import { checkCassis, checkOnleihe, checkDone, checkReserved, searchCassis, getToday } from '../utils/searchForBooks.js';
-import { logger } from '../utils/log.js';
+
+import {
+  checkCassis, checkOnleihe, checkDone, checkReserved, searchCassis, queryOnleihe,
+  processImportedData, getToday
+} from '../utils/searchForBooks.js';
+
+import { log } from '../utils/log.js';
 
 /* status:
 * jetzt ausleihbar
@@ -65,7 +70,7 @@ function renderResultslistEntry(res, item, targetId, options) {
 
 export async function homeAction(req, res) {
   try {
-    logger.info(`homeAction`);
+    log(`homeAction`);
     res.render('start', {
       mediaTypes,
       selectedList: null,
@@ -78,7 +83,7 @@ export async function homeAction(req, res) {
 
 export async function listAction(req, res) {
   try {
-    logger.debug(`listAction: path=${req.path}, query=${JSON.stringify(req.query)}`);
+    log.debug(`listAction: path=${req.path}, query=${JSON.stringify(req.query)}`);
 
     const { listType, kennung, sort, dir } = req.query;
     const sortOrder = dir === 'asc' ? 1 : -1;
@@ -108,7 +113,7 @@ export async function listAction(req, res) {
 }
 
 export async function processJson(kennung, items) {
-  logger.info(`parseJson: ${kennung}: ${items.length} items found`);
+  log(`parseJson: ${kennung}: ${items.length} items found`);
 
   if (!kennung) { return null; }
 
@@ -120,12 +125,12 @@ export async function processJson(kennung, items) {
     const mediaType = item.typ;
     const mediaId = item.mediaId;
     const received = undefined;
-    const author = item.autor.replaceAll(/[\n ]+/g, " ").replaceAll(",", "; ").replaceAll("  ", " ");  //ggf. mehrere Autoren!
+    const author = item.autor?.replaceAll(/[\n ]+/g, " ")?.replaceAll(",", "; ")?.replaceAll("  ", " ");  //ggf. mehrere Autoren!
     const title = item.titel.replaceAll(/[\n ]+/g, " ");
 
     let searchString = `${(author) ? author + "; " : ""}${title}`;
 
-    console.log("processJson:", searchString);
+    log.debug("processJson:", searchString);
 
     let available = (item.datum) ?
       item.datum.substring(6, 10) + "-" + item.datum.substring(3, 5) + "-" + item.datum.substring(0, 2) :
@@ -135,7 +140,7 @@ export async function processJson(kennung, items) {
 
 
     if (await checkCassis({ searchString })) {
-      //logger.debug(`parseHtml: ^ ${available} Cassis: ${searchString}`)
+      //log.debug(`parseHtml: ^ ${available} Cassis: ${searchString}`)
       status = "^";
       listType = 'donelist';
 
@@ -144,13 +149,13 @@ export async function processJson(kennung, items) {
       if (item0) {
         searchString = item0.searchString
         available = item0.datum; //Datum bleibt!
-        logger.debug(`processJson: # already in reservations: ${searchString} - ${available}`);
+        log.debug(`processJson: # already in reservations: ${searchString} - ${available}`);
         status = "#";
         listType = 'reservations';
       } else {
         const item0 = await checkDone(searchString);
         if (item0) {
-          logger.debug(`processJson: x ${available} erledigt: ${item0.searchString}`)
+          log.debug(`processJson: x ${available} erledigt: ${item0.searchString}`)
           searchString = item0.searchString
           status = ">";
           listType = 'donelist';
@@ -166,11 +171,11 @@ export async function processJson(kennung, items) {
         author: author,
         title,
         received,
-        kennung,
-        mediaId
+        kennung
       }
 
       const result = {
+        mediaId,
         datum: available,
         status,
         kennung,
@@ -185,7 +190,7 @@ export async function processJson(kennung, items) {
       if (result.status !== "^")
         results.push(result);
       else
-        console.log("Gefunden in Cassis: ", result.searchString);
+        log("Gefunden in Cassis: ", result.searchString);
     }
   }
 
@@ -193,69 +198,58 @@ export async function processJson(kennung, items) {
 
 }
 
-export async function importJson(kennung, json) {
 
-  logger.debug(`JSON-Import gestartet: Kennung=${kennung}, Anzahl: ${json.count}`);
+export async function importData(kennung, limit) {
+  log.debug(`importData: Abfrage gestartet: Bibliothek=${kennung}, Limit: ${limit}`);
 
-  let insertedCount = 0;
-  let updatedCount = 0;
-  let errorCount = 0;
-  let availableCount = 0;
+  const queryData = await queryOnleihe(kennung, limit);
+  log(`queryData: Found: ${queryData.length} item(s)`);
 
-  const items = await processJson(kennung, json);
+  const { results, counts } = await processImportedData(kennung, queryData);
 
-  if (items && items.length > 0) {
-    const result = await upsertItems(items);
-    insertedCount += result.insertedCount;
-    updatedCount += result.updatedCount;
-    errorCount += result.errorCount;
-    availableCount += result.availableCount;
+  log("importData: counts=", counts);
+
+  let message;
+  if (results && results.length > 0) {
+    const resultMsg = await upsertItems(results);
+
+    message = `Insgesamt ${queryData.length} Medien geladen, 
+    jetzt ausleihbar: ${counts.availableCount}, 
+    neu: ${resultMsg.resultCounts?.insertedCount},
+    aktualisiert: ${resultMsg.resultCounts?.modifiedCount}, 
+    in Cassis: ${counts.cassisCount}`
   }
 
-  const message = `Bücher, neu: ${insertedCount}, aktualisiert: ${updatedCount}, verfügbar: ${availableCount}`;
-
-  return ({ available: availableCount, message });
+  return ({ available: counts.availableCount, message });
 }
 
-export async function importJsonAction(req, res) {
+export async function importAction(req, res) {
   try {
+    //log('importAction:', req.body);
+    const { kennung } = req.body;
+    const limit = 80;
 
-    const { kennung, jsonString } = req.body
+    const result = await importData(kennung, limit);
 
-    //TODO Input validieren! u.a. nur eBooks!
-
-    console.log(kennung);
-    console.log(jsonString);
-    let json;
-    try {
-      json = JSON.parse(jsonString)
-    } catch (err) {
-      errorHandler(err, 'importJsonDataAction', res);
-    }
-
-    const result = await importJson(kennung, json);
-
-
-    console.log(`Found: ${json.length} item(s)`);
-
-    logger.info(`importJsonDataAction: ${result.message}`);
+    log(`importAction: ${result.message}`);
 
     res.status(200).json(result);
 
   } catch (err) {
-    errorHandler(err, 'importJsonDataAction', res);
+    errorHandler(err, 'importAction', res);
   }
 };
 
+
 async function singleSearch(item) {
-  console.log(`singleSearch: item`, item.searchString);
+  log.info(`singleSearch: item`, item.searchString);
 
   let result = await checkCassis(item);  //{ datum: getToday(), status: "^", listType: 'donelist' }
   if (result) {
     item.datum = result.datum;
     item.status = result.status;
     item.listType = result.listType;
-    logger.debug(`singleSearch: ^ ${result.datum} Cassis: ${item.searchString}`)
+    log.debug(`singleSearch: ^ ${result.datum} Cassis: ${item.searchString}`)
 
   } else {
     result = await checkDone(item.searchString);
@@ -264,7 +258,7 @@ async function singleSearch(item) {
       item.status = result.status;
       item.listType = result.listType;
       item.mediaId = result.mediaId;
-      logger.debug(`singleSearch: > ${result.datum} erledigt: ${item.searchString}`)
+      log.debug(`singleSearch: > ${result.datum} erledigt: ${item.searchString}`)
     } else {
 
       const results = await checkOnleihe(item, 1);
@@ -289,14 +283,14 @@ async function singleSearch(item) {
 export async function updateItemAction(req, res) {
   try {
     const { item: item0, targetId, upsert } = req.body;
-    console.log(`updateItemAction: item0=`, item0.kennung, item0.searchString, ", targetId=", targetId);
+    log(`updateItemAction: item0=`, item0.kennung, item0.searchString, ", targetId=", targetId);
 
     const oldDatum = item0.datum || undefined;
     let searchResult = await singleSearch(item0);
     if (!searchResult) {
       return res.status(404).json({ message: 'updateItemAction: No item found' });
     }
-    console.log(searchResult);
+    log.debug(searchResult);
     const item = await updateItemById(searchResult, upsert);
     if (!item) {
       return res.status(404).json({ message: 'updateItemAction: item not saved' });
@@ -304,8 +298,6 @@ export async function updateItemAction(req, res) {
 
     let message;
 
-    console.log("item0=", item0);
-    console.log("item=", item);
     if (item.status === "*") {
       message = `${item.mediaType} jetzt ausleihbar!`
     } else if (oldDatum !== item.datum) {
@@ -324,7 +316,7 @@ export async function updateItemAction(req, res) {
 export async function markAsDoneAction(req, res) {
   try {
     const { itemId, targetId } = req.body;
-    logger.info(`markAsDoneAction: itemId=${itemId}, targetId = ${targetId}`);
+    log(`markAsDoneAction: itemId=${itemId}, targetId = ${targetId}`);
 
     const item = await moveToList(itemId, 'donelist', 'x');
 
@@ -341,7 +333,7 @@ export async function markAsDoneAction(req, res) {
 export async function markAsReservedAction(req, res) {
   try {
     const { itemId, targetId } = req.body;
-    logger.info(`markAsReservedAction: itemId=${itemId}, targetId=${targetId}`);
+    log(`markAsReservedAction: itemId=${itemId}, targetId=${targetId}`);
 
     const item = await moveToList(itemId, 'reservations', '#');
 
@@ -358,7 +350,7 @@ export async function markAsReservedAction(req, res) {
 export async function changeAction(req, res) {
   try {
     const { itemId, searchString, prio, datum, targetId } = req.body;
-    logger.debug(`changeAction: itemId=${itemId}, searchString=${searchString}, datum=${datum}, prio=${prio}`);
+    log.debug(`changeAction: itemId=${itemId}, searchString=${searchString}, datum=${datum}, prio=${prio}`);
 
     const item = await changeItem(itemId, searchString, prio, datum);
 
@@ -372,7 +364,7 @@ export async function changeAction(req, res) {
 export async function resetAction(req, res) {
   try {
     const { itemId, targetId } = req.body;
-    logger.info(`resetAction: itemId=${itemId}`);
+    log(`resetAction: itemId=${itemId}`);
 
     const item = await moveToList(itemId, 'watchlist', "=");
 
@@ -414,7 +406,7 @@ async function prepareItem(item) {
     return item;
 
   } catch (error) {
-    logger.error('Datenbankfehler:' + JSON.stringify(error));
+    log.error('Datenbankfehler:' + JSON.stringify(error));
     throw error;
   }
 }
@@ -422,30 +414,29 @@ async function prepareItem(item) {
 export async function fullSearchAction(req, res) {
   try {
     const { searchString, mediaType, kennungen } = req.body;
-    logger.info(`fullSearchAction: searchString=${searchString}, mediaType=${mediaType}, kennungen=${kennungen}`);
+    log(`fullSearchAction: searchString=${searchString}, mediaType=${mediaType}, kennungen=${kennungen}`);
 
-    const limit = 50; //max Anzahl von Ergebnissen pro Quelle
+    const limit = 40; //max Anzahl von Ergebnissen pro Quelle
 
     let results = [];
 
     for (const kennung of kennungen) {
       let results0;
-
       if (kennung === 'CASSIS') {
         results0 = (await searchCassis(searchString));
         results0.splice(limit);
+        log.debug('CASSIS', results0.length);
 
       } else {
         results0 = await checkOnleihe({ kennung, searchString, mediaType }, limit);
         results0 = results0.filter((item) => (item.status !== "!"));
-      }
+        log.debug(kennung, results0.length);
 
+      }
       results = results.concat(results0);
     }
 
     let preparedResults = (await Promise.all(results = results.map(prepareItem))).sort(sortResults);
-
-    //console.log(preparedResults);
 
     res.render(join(import.meta.dirname, 'views', 'resultlist'), { results: preparedResults }, function (err, html) {
       if (err) {
@@ -463,7 +454,7 @@ export async function fullSearchAction(req, res) {
 export async function deleteAction(req, res) {
   try {
     const { itemId, targetId } = req.body;
-    logger.info(`deleteAction: itemId=${itemId}`);
+    log(`deleteAction: itemId=${itemId}`);
 
     const item = await getItem(itemId);
 
@@ -484,7 +475,7 @@ export async function deleteAction(req, res) {
 //*********************** Menu actions ***********************************/
 
 export async function bulkUpdate(items, minWait) {   //minWait in sec zwischen den Überprüfungen, maxWait = 5 * minWait
-  logger.info(`bulkUpdate: items.length=${items.length}, wait=${minWait}`);
+  log(`bulkUpdate: items.length=${items.length}, wait=${minWait}`);
   let availCount = 0;
   let availDateCount = 0;
 
@@ -506,28 +497,26 @@ export async function bulkUpdate(items, minWait) {   //minWait in sec zwischen d
 
     } catch (err) {
       const message = `bulkUpdate: Fehler bei: "${item.kennung}" "${item.searchString}":`
-      logger.error(message, err);
+      log.error(message, err);
       push.syswarn(message, "Library Checker");
       return { error: message };
     }
   }
 
   const message = `Geprüfte Datensätze: ${items.length}, Datum geändert: ${availDateCount}, verfügbare E-Books: ${availCount}`;
-  logger.info(message);
+  log(message);
   return { success: message };
 }
 
 export const bulkUpdateAction = async (req, res) => {
   try {
 
-    logger.info(`bulkUpdateAction: days=${req.body}`);
+    log('bulkUpdateAction: days=', req.body.days);
 
     const days = parseInt(req.body.days, 10);
 
-    logger.info(`bulkUpdateAction: days=${days}`);
-
     const items = await findEBooksToCheck(days);
-    console.log('bulkUpdateAction:', items.length, ' items gefunden')
+    log.debug('bulkUpdateAction:', items.length, ' items gefunden')
 
     const result = await bulkUpdate(items, 8);
 
@@ -547,7 +536,7 @@ export async function jsonFileAction(req, res) {
     const { kennung } = req.body;
     const { buffer, originalname } = req.file;
 
-    logger.info(`jsonFileAction: kennung=${kennung}, file=${originalname}`);
+    log(`jsonFileAction: kennung=${kennung}, file=${originalname}`);
 
     let items = [];
     let itemsCount = 0;
@@ -568,12 +557,14 @@ export async function jsonFileAction(req, res) {
       const result = await upsertItems(items);
 
       if (result.success) {
-        const msg = `[${kennung}] Hochgeladene Datensätze: ${itemsCount}, davon neu eingefügt: ${result.insertedCount}, vorhandene Datensätze aktualisiert: ${result.updatedCount}`;
-        logger.info(msg)
+        const msg = (result.resultCounts) ?
+          `[${kennung}] Hochgeladene Datensätze: ${itemsCount}, davon neu eingefügt: ${result.resultCounts?.insertedCount}, vorhandene Datensätze aktualisiert: ${result.resultCounts?.updatedCount}` :
+          `${result.message}`
+        log(msg)
         res.status(200).json({ success: msg });
 
       } else {
-        logger.error('Fehler:', result.error);
+        log.error('Fehler:', result.error);
         res.status(500).json({ error: result.error }) //500 = internal server error
       }
     }
@@ -585,7 +576,7 @@ export async function jsonFileAction(req, res) {
 
 export const clearAction = async (req, res) => {
   try {
-    logger.info(`clearAction`);
+    log(`clearAction`);
     const items = await findItemsToClear(12);  //12 Monate zurück überprüfen
 
     let checkedCount = 0;
@@ -599,13 +590,13 @@ export const clearAction = async (req, res) => {
 
         if (await checkCassis(item) ||
           (item.listType === 'donelist') && (item.mediaType === "eMagazine" || item.mediaType === "ePaper")) {
-          logger.debug(`clearAction: [${checkedCount}] ${item.datum} Gelöscht: ${item.searchString} [${item.kennung}]`)
+          log.debug(`clearAction: [${checkedCount}] ${item.datum} Gelöscht: ${item.searchString} [${item.kennung}]`)
           deleteItem(item._id)
           deleteCount++;
 
         } else {
           if (item.listType === 'watchlist' && await checkDone(item.searchString)) {
-            logger.debug(`clearAction: [${checkedCount}] ${item.datum} ${item.kennung}: Erledigt: ${item.searchString}`)
+            log.debug(`clearAction: [${checkedCount}] ${item.datum} ${item.kennung}: Erledigt: ${item.searchString}`)
             moveToList(item._id, 'donelist', 'x');
             doneCount++;
 
@@ -617,13 +608,13 @@ export const clearAction = async (req, res) => {
         }
 
       } catch (err) {
-        logger.error(`clearAction: Fehler bei Item ${checkedCount}: "${item.kennung}" "${item.searchString}":`, err);
+        log.error(`clearAction: Fehler bei Item ${checkedCount}: "${item.kennung}" "${item.searchString}":`, err);
         errorCount++;
       }
     }
     let message = `Einträge, geprüft: ${checkedCount}, erledigt: ${doneCount}, gelöscht: ${deleteCount}.`;
     if (errorCount > 0) message += `. Fehler: ${errorCount}`
-    logger.info(message);
+    log(message);
     push.sysnote(message, 'Library Checker');
 
     res.json({ counts: { checkedCount, doneCount, deleteCount, errorCount }, message });
@@ -636,7 +627,7 @@ export const clearAction = async (req, res) => {
 export async function itemAction(req, res) {
   try {
     const { item, targetId, listpath } = req.body;
-    //logger.debug(`itemAction: item=${JSON.stringify(item)}, targetId=${targetId}`);
+    log.debug(`itemAction: item=`, item);
 
     if (!item._id) {
       const id = await findItemId(item.kennung, item.searchString);
@@ -647,12 +638,10 @@ export async function itemAction(req, res) {
 
     let cassisUrl = cassisRemoteAdr + encodeURIComponent(item.searchString);
 
-    console.log("itemAction: item=", item)
-
     let onlUrl;
     if (['HESS', 'DÜS'].includes(item.kennung)) {
-      if (item.mediaData?.mediaId && (item.mediaData.mediaId.length > 12))
-        onlUrl = `${httpRoot[item.kennung]}/search/mediadetail?productId=${item.mediaData.mediaId}`
+      if (item.mediaId)
+        onlUrl = `${httpRoot[item.kennung]}/search/mediadetail?productId=${item.mediaId}`
     } else {
       onlUrl = `${httpRoot[item.kennung]}${item.mediaData.mediaRef}`
     }
@@ -667,10 +656,10 @@ export async function itemAction(req, res) {
 
     res.render(join(import.meta.dirname, 'views', 'item'), { item, data }, function (err, html) {
       if (err) {
-        console.error(err);
+        log.error(err);
         res.status(500).json({ error: 'render item: ' + err.message });
       } else {
-        //logger.debug(html);
+        //log.debug(html);
         res.send({ html });
       }
     });
@@ -686,7 +675,7 @@ export async function itemAction(req, res) {
 export async function upsertSearchItemAction(req, res) {
   try {
     const { searchString, mediaType, kennungen, targetDate } = req.body;
-    logger.info(`upsertSearchItemAction: searchString=${searchString}, mediaType=${mediaType}, kennungen=${kennungen}, targetDate=${targetDate}`);
+    log(`upsertSearchItemAction: searchString=${searchString}, mediaType=${mediaType}, kennungen=${kennungen}, targetDate=${targetDate}`);
 
     let item = { searchString, mediaType, kennungen, targetDate, available: [] };
 
@@ -717,7 +706,7 @@ export async function upsertSearchItemAction(req, res) {
 
 export async function getWaitlistAction(req, res) {
   try {
-    logger.info(`getWaitlistAction: path=${req.path}, body=${JSON.stringify(req.body)}`);
+    log(`getWaitlistAction: path=${req.path}, body=${JSON.stringify(req.body)}`);
 
     const { field, direction } = req.body;
     const items = await findSearchItems({}, { 'status': -1, 'targetDate': 1 });
@@ -745,11 +734,11 @@ export async function getWaitlistAction(req, res) {
 
 export async function updWaitListAction(req, res) {
   try {
-    logger.info(`updWaitListAction`);
+    log(`updWaitListAction`);
 
     const searchItems = await findSearchItems({ 'targetDate': getToday() });
 
-    console.log('updWaitListAction', searchItems);
+    log.debug('updWaitListAction', searchItems);
 
     await updateSearchItems(searchItems)
 
@@ -778,7 +767,7 @@ export async function updWaitListAction(req, res) {
 
 export async function updateSearchItems(items) {
 
-  const limit = 20; //max Anzahl von Ergebnissen pro Quelle
+  const limit = 40; //max Anzahl von Ergebnissen pro Quelle
 
   for (const item of items) {
 
@@ -786,14 +775,12 @@ export async function updateSearchItems(items) {
       if ((item.available.indexOf(kennung) === -1)) {
 
         const results = await checkOnleihe({ kennung, searchString: item.searchString, mediaType: item.mediaType }, limit);
-        console.log(results);
 
         for (const result of results) {
           if (result.status !== "!") {
 
             result.listType = 'watchlist';
             result.prio = true;
-            console.log(result);
             upsertItem(result);
 
             item.available.push(kennung);
@@ -808,7 +795,6 @@ export async function updateSearchItems(items) {
     }
 
     upsertSearchItem(item);
-    console.log(item);
   }
 
 }
@@ -816,7 +802,7 @@ export async function updateSearchItems(items) {
 export async function deleteSearchItemAction(req, res) {
   try {
     const { itemId } = req.body;
-    logger.debug(`deleteSearchItemAction: itemId=${itemId}`);
+    log.debug(`deleteSearchItemAction: itemId=${itemId}`);
 
     // Datenbankzugriff
     const result = deleteSearchItem(itemId);
@@ -832,28 +818,10 @@ export async function deleteSearchItemAction(req, res) {
   }
 };
 
-
-
-export async function convertAction(req, res) {
-  try {
-    const { kennung } = req.body;
-    logger.debug(`convertAction`);
-
-    // Datenbankzugriff
-    await convert();
-
-    return res.status(200).json({ success: `convertAction: Daten konvertiert.` });
-
-  } catch (err) {
-    errorHandler(err, 'convertAction', res);
-  }
-};
-
-
 const errorHandler = (err, actionName, res) => {
   const message = "CheckLib: Fehler in '" + actionName + "': " + err.message;
-  logger.error(message);
-  if (err.stack) logger.debug(err.stack);
+  log.error(message);
+  if (err.stack) log.debug(err.stack);
   if (res) {
     res.status(500).json({ error: 'Fehler: ' + err.message });
   }

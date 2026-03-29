@@ -1,12 +1,13 @@
 import express from 'express';
 
 import { checkerCronJob, fullCheckerCronJob, queryCronJob } from '../utils/cron.js';
-import { logger } from '../utils/log.js';
+import { log } from '../utils/log.js';
 
 import {
-  homeAction, listAction, jsonFileAction, importJsonAction, updateItemAction as updateItemAction, bulkUpdateAction as bulkUpdateAction, markAsDoneAction, markAsReservedAction,
-  resetAction, clearAction, deleteAction, itemAction, fullSearchAction, changeAction, upsertSearchItemAction, convertAction,
-  getWaitlistAction, deleteSearchItemAction, updWaitListAction
+  homeAction, listAction, jsonFileAction, importAction as importAction, updateItemAction as updateItemAction,
+  bulkUpdateAction as bulkUpdateAction, markAsDoneAction, markAsReservedAction, resetAction, clearAction,
+  deleteAction, itemAction, fullSearchAction, changeAction, upsertSearchItemAction, getWaitlistAction,
+  deleteSearchItemAction, updWaitListAction
 } from './controller.js';
 import upload from '../utils/uploadConfig.js';
 
@@ -15,7 +16,7 @@ const router = express.Router();
 
 router.get('/', homeAction);
 router.get('/list', listAction);
-router.post('/imp/json', importJsonAction);
+router.post('/import', importAction);
 router.post('/menu', itemAction);
 router.post('/update', bulkUpdateAction);
 router.post('/updItem', updateItemAction);
@@ -28,7 +29,6 @@ router.post('/clear', clearAction);
 router.post('/del', deleteAction);
 router.post('/search', fullSearchAction);
 
-router.post('/conv', convertAction);
 router.post('/waitlist/upsert', upsertSearchItemAction);
 router.post('/waitlist/del', deleteSearchItemAction);
 router.post('/waitlist/get', getWaitlistAction);
@@ -40,13 +40,13 @@ router.post('/waitlist/upd', updWaitListAction);
 (fullCheckerCronJob) && fullCheckerCronJob.start();
 (queryCronJob) && queryCronJob.start();
 
-if (logger.isLevelEnabled('debug')) {
+if (log.isLevelEnabled('debug')) {
   try {
-    (queryCronJob) && logger.debug(`Cron: Next queryCronJob: ${queryCronJob.nextDate().toISO()}`);
-    (checkerCronJob) && logger.debug(`Cron: Next checkerCronJob: ${checkerCronJob.nextDate().toISO()}`);
-    (fullCheckerCronJob) && logger.debug(`Cron: Next fullCheckerCronJob: ${fullCheckerCronJob.nextDate().toISO()}`);
+    (queryCronJob) && log.debug(`Cron: Next queryCronJob: ${queryCronJob.nextDate().toISO()}`);
+    (checkerCronJob) && log.debug(`Cron: Next checkerCronJob: ${checkerCronJob.nextDate().toISO()}`);
+    (fullCheckerCronJob) && log.debug(`Cron: Next fullCheckerCronJob: ${fullCheckerCronJob.nextDate().toISO()}`);
   } catch (error) {
-    logger.error(error)
+    log.error(error)
   }
 }
 

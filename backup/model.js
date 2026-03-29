@@ -19,7 +19,7 @@ export class BackupService {
     }
 
     // Backup-Verzeichnis erstellen
-    const backupDir = process.env.CHECKLIB_BACKUPDIR || path.join(process.env.CHECKLIB_DATADIR, 'backup');
+    const backupDir = process.env.CHECKLIB_BACKUPDIR || path.join(process.env.DATADIR, 'backup');
     await fs.mkdir(backupDir, { recursive: true });
 
     // Dateiname mit Zeitstempel
@@ -78,7 +78,7 @@ export class BackupService {
   }
 
   static async listBackups() {
-    const backupDir = process.env.CHECKLIB_BACKUPDIR || path.join(process.env.CHECKLIB_DATADIR, 'backup');
+    const backupDir = process.env.CHECKLIB_BACKUPDIR || path.join(process.env.DATADIR, 'backup');
     try {
       const files = await fs.readdir(backupDir);
       return Promise.all(
@@ -102,7 +102,7 @@ export class BackupService {
   }
 
   static async restoreBackup(filename) {
-    const backupDir = process.env.CHECKLIB_BACKUPDIR || path.join(process.env.CHECKLIB_DATADIR, 'backup');
+    const backupDir = process.env.CHECKLIB_BACKUPDIR || path.join(process.env.DATADIR, 'backup');
     const filePath = path.join(backupDir, filename);
 
     try {

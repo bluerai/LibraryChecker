@@ -1,5 +1,5 @@
 import { findItemDone, findItemReserved } from '../app/model.js';
-import { logger } from './log.js';
+import { log } from './log.js';
 
 const cassisHost = process.env.CASSIS_HOST;
 const scraperHost = process.env.SCRAPER_HOST;
@@ -9,7 +9,7 @@ export function getToday() {
 }
 
 export async function checkCassis(item) {
-  logger.debug(`checkCassis: ${item.searchString}`)
+  //log.debug(`checkCassis: ${item.searchString}`)
   const url = `http://${cassisHost}/api/count?search=${encodeURIComponent(item.searchString)}`;
 
   let result;
@@ -23,7 +23,7 @@ export async function checkCassis(item) {
 
   if (!result.ok) {
     const errorData = await result.json();
-    console.log('API-Fehler:', errorData);
+    log.error('API-Fehler:', errorData);
     throw new Error(`HTTP error! status: ${result.status}`);
   }
 
@@ -38,7 +38,7 @@ export async function checkCassis(item) {
 export async function searchCassis(searchString) {
   searchString = searchString.split(' [')[0];
   const url = 'http://' + cassisHost + '/api/search?search=' + encodeURIComponent(searchString);
-  logger.info(`searchCassis: url=${url}`);
+  log(`searchCassis: url=${url}`);
 
   let result;
   try {
@@ -57,7 +57,7 @@ export async function searchCassis(searchString) {
 
   if (!result.ok) {
     const errorData = await result.json();
-    console.log('API-Fehler:', errorData);
+    log.error('API-Fehler:', errorData);
     throw new Error(`HTTP error! ${JSON.stringify(result)}`);
   }
 
@@ -84,12 +84,12 @@ export async function searchCassis(searchString) {
 }
 
 export async function checkDone(searchString) {
-  logger.debug(`checkDone: ${searchString}`);
+  //log.debug(`checkDone: ${searchString}`);
   return await findItemDone(searchString);
 }
 
 export async function checkReserved(kennung, searchString) {
-  //logger.debug(`checkReserved: ${searchString}`);
+  //log.debug(`checkReserved: ${searchString}`);
   return await findItemReserved(kennung, searchString);
 }
 
@@ -131,7 +131,7 @@ function containsAllFragments(itemSearchString, searchString) {
 }
 
 export async function checkOnleihe(item0, limit = 1) {
-  console.log('checkOnleihe:', item0.kennung, item0.searchString, 'Limit:', limit);
+  log.debug('checkOnleihe:', item0.kennung, item0.searchString, 'Limit:', limit);
 
   let url;
   if (['HESS', 'DÜS'].includes(item0.kennung))
@@ -144,8 +144,6 @@ export async function checkOnleihe(item0, limit = 1) {
 
   else return [];
 
-  console.log(url);
-
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -156,7 +154,8 @@ export async function checkOnleihe(item0, limit = 1) {
   if (data.error) throw new Error(data.error)
   if (data.length == 0) return data;
 
-  console.log('checkOnleihe: data=', data);
+  log('checkOnleihe: data.length=', data.length);
+  //log.debug('checkOnleihe: data=', data[0]);
 
   let results = [];
 
@@ -175,8 +174,8 @@ export async function checkOnleihe(item0, limit = 1) {
       status = "=";   //ausgeliehen, vormerkbar
     }
 
-    const author = item.author.replaceAll(/[\n ]+/g, " ");  //ggf. mehrere Autoren!
-    const title = item.title.replaceAll(/[\n ]+/g, " ");
+    const author = item.author?.replaceAll(/[\n ]+/g, " ");  //ggf. mehrere Autoren!
+    const title = item.title?.replaceAll(/[\n ]+/g, " ");
 
 
     let searchSpec = "";
@@ -185,15 +184,15 @@ export async function checkOnleihe(item0, limit = 1) {
       searchSpec = regExpMatch ? " " + regExpMatch[0] : "";
     }
     const itemSearchString = `${(author) ? author + "; " : ""}${title}${searchSpec}`;
-    
+
     if (containsAllFragments(itemSearchString, item0.searchString)) {
 
       const mediaData = {
         author,
         title,
         kennung: item0.kennung,
+        mediaRef: item.mediaRef,
         mediaId: item.mediaId,
-        mediaRef: item.mediaRef
       }
 
       const result = {
@@ -207,7 +206,7 @@ export async function checkOnleihe(item0, limit = 1) {
         mediaData
       };
 
-      //console.log(result);
+      if (mediaData.mediaId && mediaData.mediaId.length > 12) result.mediaId = mediaData.mediaId;
 
       results.push(result);
     }
@@ -217,9 +216,115 @@ export async function checkOnleihe(item0, limit = 1) {
     results.push({ status: "!", kennung: item0.kennung, searchString: item0.searchString, datum: "N/A", mediaType: item0.mediaType });
  */
 
-  //console.log(results);
-
   return results;
 
 }
 
+export async function queryOnleihe(kennung, limit) {
+  log(`queryOnleihe: kennung=${kennung}, limit=${limit}`);
+
+  const url = `http://${scraperHost}/list/${encodeURIComponent(kennung)}/${limit}`;
+
+  let data = [];
+  try {
+    const result = await fetch(url, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" }
+    });
+
+    data = await result.json();
+
+  } catch (error) {
+    console.error(error);
+    throw new Error(`error in queryOnleihe: ${error.message}`);
+  }
+  return data;
+}
+
+
+export async function processImportedData(kennung, data) {
+  //log.debug(`processImportedData kennung:`, kennung, 'dataLength:', data.length)
+  const today = getToday();
+
+  const results = [];
+
+  let watchListCount = 0;
+  let donelistCount = 0;
+  let reservationsCount = 0;
+  let cassisCount = 0;
+  let availableCount = 0;
+
+  for (const card of data) {
+
+    let available = card.datum || today;
+    const mediaType = card.mediaType;
+    const mediaId = card.mediaId;
+    const author = card.author;
+    const title = card.title;
+
+    let searchString = `${(author) ? author + "; " : ""}${title}`;
+    let status = "?";
+    let listType;
+
+    if (await checkCassis({ searchString })) {
+      status = "^";
+      listType = 'donelist';
+      cassisCount++
+    } else {
+      const item0 = await checkReserved(kennung, searchString);
+      if (item0) {
+        //searchString = item0.searchString
+        available = item0.datum; //Datum bleibt!
+        status = "#";
+        listType = 'reservations';
+        reservationsCount++
+
+      } else {
+        const item0 = await checkDone(searchString);
+        if (item0) {
+          //searchString = item0.searchString
+          status = ">";
+          listType = 'donelist';
+          donelistCount++
+        } else {
+          if (available === "") {
+            status = "*";
+            availableCount++;
+          } else {
+            status = "=";
+            watchListCount++
+          }
+          listType = 'watchlist';
+        }
+      }
+    }
+
+    const mediaData = {
+      available,
+      author: author,
+      title,
+      kennung,
+      mediaId
+    }
+
+    const result = {
+      datum: available,
+      status,
+      kennung,
+      searchString,
+      mediaType,
+      mediaData,
+      listType
+    };
+
+    if (mediaData.mediaId && mediaData.mediaId.length > 12) result.mediaId = mediaData.mediaId;
+
+    // nur sichern, wenn nicht in Cassis!!!
+    if (result.status !== "^") results.push(result);
+
+  }
+  const counts = { availableCount, watchListCount, donelistCount, reservationsCount, cassisCount };
+
+  return { results, counts };
+
+}

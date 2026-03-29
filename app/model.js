@@ -1,5 +1,5 @@
 import { MongoClient, ObjectId } from 'mongodb';
-import { logger } from '../utils/log.js';
+import { log } from '../utils/log.js';
 
 const mongoUrl = process.env.CHECKLIBDB_URL || 'mongodb://localhost:27017';
 const dbName = process.env.CHECKLIBDB_NAME || 'library_info';
@@ -22,12 +22,12 @@ export async function connect() {
   SEARCH_COLL = DB.collection(searchItemsCollName);
   await SEARCH_COLL.createIndex({ searchString: 1 });
 
-  logger.info(`Database connected: url=${mongoUrl}`);
+  log(`Database connected: url=${mongoUrl}`);
 }
 
 export async function disconnect() {  //not used
   await DBCLIENT.close();
-  logger.info('Database disconnected.');
+  log('Database disconnected.');
 }
 
 export async function getItem(itemId) {
@@ -43,7 +43,7 @@ export async function findItemId(kennung, searchString) {
     const item = await DATA_COLL.findOne({ kennung, searchString });
     return (item) ? new ObjectId(item._id) : null;
   } catch (error) {
-    logger.error('Datenbankfehler:' + JSON.stringify(error));
+    log.error('Datenbankfehler:' + JSON.stringify(error));
     throw error;
   }
 }
@@ -65,7 +65,7 @@ export async function findItemDone(searchString) {
     return item;
   } catch (error) {
     console.error(error);
-    logger.error('Datenbankfehler:' + JSON.stringify(error));
+    log.error('Datenbankfehler:' + JSON.stringify(error));
     throw error;
   }
 }
@@ -84,7 +84,7 @@ export async function findItemReserved(kennung, searchString) {
     return item;
   } catch (error) {
     console.error(error);
-    logger.error('Datenbankfehler:' + JSON.stringify(error));
+    log.error('Datenbankfehler:' + JSON.stringify(error));
     throw error;
   }
 }
@@ -118,7 +118,7 @@ export async function findSiblings(kennung, searchString) {
 
   } catch (error) {
     console.error(error);
-    logger.error('Datenbankfehler:' + JSON.stringify(error));
+    log.error('Datenbankfehler:' + JSON.stringify(error));
     throw error;
   }
 }
@@ -140,22 +140,14 @@ export async function changeItem(itemId, newSearchString, newPrio, newDatum) {
 
 
 export async function updateItemById(item, upsert = false) {
-  console.log("updateItemById: ", item.kennung, item.searchString);
+  log("updateItemById: ", item.kennung, item.searchString);
   const itemId = item._id;
+  const { _id, ...updateData } = item; //  _id entfernen
   const result = await DATA_COLL.findOneAndUpdate(
     { _id: new ObjectId(itemId) },
     {
       $set: {
-        kennung: item.kennung,
-        searchString: item.searchString,
-        mediaType: item.mediaType,
-        datum: item.datum,
-        status: item.status,
-        listType: item.listType,
-        mediaType: item.mediaType,
-        mediaData: item.mediaData,
-        received: item.received,
-        prio: item.prio,
+        ...updateData,
         lastUpdated: new Date()
       }
     },
@@ -165,7 +157,7 @@ export async function updateItemById(item, upsert = false) {
     }
   );
 
-  //logger.debug("updateItemById: " + JSON.stringify(result))
+  //log.debug("updateItemById: " + JSON.stringify(result))
   return result;
 }
 
@@ -173,7 +165,7 @@ export async function updateItemById(item, upsert = false) {
 export async function upsertItem(item) {
   const collection = DATA_COLL;
   if (item._id === undefined) delete item._id;
-  
+
   // Suchkriterium (Composite Key)
   const filter = {
     searchString: item.searchString,
@@ -193,11 +185,10 @@ export async function upsertItem(item) {
   };
   try {
     const result = await collection.findOneAndUpdate(filter, update, options);
-    logger.debug(`upsertItem completed: ${JSON.stringify(result)}`);
+    log.debug(`upsertItem completed: ${JSON.stringify(result)}`);
     return result.value;
   } catch (error) {
-    console.log('Error in upsertItem:', item)
-    logger.error('Error in upsertItem:', error);
+    log.error('Error in upsertItem:', error);
     throw error;
   }
 }
@@ -258,28 +249,28 @@ export async function findEBooksToCheck(days = 22, kennungen = ['DÜS', 'THÜR',
 }
 
 export async function upsertItems(items) {
-  // Zähler initialisieren
-  let insertedCount = 0;
-  let updatedCount = 0;
-  let errorCount = 0;
-  let availableCount = 0;
+  let resultCounts = {};
 
   const bulkOps = items.map(item => {
-    if (item.status == "*") availableCount++;
-
     return {
       updateOne: {
         filter: {
-          searchString: item.searchString,
-          kennung: item.kennung,
-          mediaType: item.mediaType
+          $or: [
+            {
+              mediaId: item.mediaId   // 1. Priorität: echte mediaId
+            },
+            {
+              searchString: item.searchString,    // 2. Fallback nur wenn KEINE gültige mediaId existiert
+              kennung: item.kennung,
+              mediaType: item.mediaType,
+              mediaId: { $in: [null, undefined] }
+            }
+          ]
         },
         update: {
           $set: {
             ...item,
-            kennung: item.kennung,
             datum: item.datum || null,
-            mediaType: item.mediaType,
             lastUpdated: new Date()
           },
           $setOnInsert: {
@@ -293,47 +284,24 @@ export async function upsertItems(items) {
 
   if (bulkOps.length > 0) {
     try {
-      const result = await DATA_COLL.bulkWrite(bulkOps, { ordered: false });
+      resultCounts = await DATA_COLL.bulkWrite(bulkOps, { ordered: false });
 
-      // Ergebnisse auswerten
-      insertedCount = result.upsertedCount || 0;
-      updatedCount = result.modifiedCount || 0;
-      errorCount = result.writeErrors?.length || 0;
+      log.debug('upsertItems: resultCounts:', resultCounts)
 
       // Fehler protokollieren
-      if (errorCount > 0) {
-        logger.error('upsertItems: Fehler beim Bulk-Write:' + JSON.stringify(result.writeErrors));
+      if (resultCounts.writeErrors > 0) {
+        log.error('upsertItems: Fehler beim Bulk-Write:' + JSON.stringify(result.writeErrors));
       }
 
-      return {
-        success: true,
-        insertedCount,
-        updatedCount,
-        errorCount,
-        availableCount,
-        totalCount: items.length
-      };
+      return { success: true, resultCounts };
 
     } catch (error) {
-      logger.error(`upsertItems: Fehler beim Speichern: ` + JSON.stringify(error));
-      return {
-        success: false,
-        error: error.message,
-        insertedCount,
-        updatedCount,
-        availableCount,
-        errorCount: errorCount + 1
-      };
+      console.error(error);
+      return { error: error.message };
     }
   }
 
-  return {
-    success: true,
-    insertedCount: 0,
-    updatedCount: 0,
-    errorCount: 0,
-    message: 'Keine Operationen ausgeführt'
-  };
+  return { success: 'Keine Operationen ausgeführt' };
 }
 
 //************** SEARCHITEMS *********************************************
@@ -362,10 +330,10 @@ export async function upsertSearchItem(item) {
 
   try {
     const result = await collection.findOneAndUpdate(filter, update, options);
-    logger.debug(`upsertSearchItem completed: ${JSON.stringify(result)}`);
+    log.debug(`upsertSearchItem completed: ${JSON.stringify(result)}`);
     return result.value;
   } catch (error) {
-    logger.error('Error in upsertSearchItem:', error);
+    log.error('Error in upsertSearchItem:', error);
     throw error;
   }
 }
@@ -410,178 +378,14 @@ export async function findSearchItems(filterOptions, sortOptions = {}) {
 }
 
 export async function deleteSearchItem(itemId) {
-  logger.debug('deleteSearchItem: ' + itemId);
+  log.debug('deleteSearchItem: ' + itemId);
   try {
     const result = await SEARCH_COLL.deleteOne({ _id: new ObjectId(itemId) });
     return result;
   } catch (error) {
-    logger.error('Datenbankfehler:' + JSON.stringify(error));
-    throw error;
-  }
-}
-// ================ Konvertierungen =================
-async function deleteStringMediaData() {
-  const result = await DATA_COLL.updateMany(
-    { mediaData: { $type: "string" } },
-    { $unset: { mediaData: 1 } }
-  );
-
-  console.log(`${result.modifiedCount} mediaData-Strings gelöscht`);
-  return result.modifiedCount;
-}
-
-async function processSearchStrings() {
-  try {
-    // Erst alle Dokumente als Array holen (einfacher zu debuggen)
-    const docs = await DATA_COLL.find({
-      searchString: { $regex: /^[^,]*,[^;]*;[^;]*$/ }
-    }).toArray();
-
-    console.log(`Gefundene Dokumente: ${docs.length}`);
-
-    let processedCount = 0;
-    let errorCount = 0;
-
-    for (const doc of docs) {
-      try {
-        // Ausführliche Validierung
-        if (!doc || typeof doc !== 'object') {
-          console.warn('Ungültiges Dokument (kein Objekt):', doc);
-          errorCount++;
-          continue;
-        }
-
-        if (!doc._id) {
-          console.warn('Dokument ohne _id:', doc);
-          errorCount++;
-          continue;
-        }
-
-        if (!doc.searchString || typeof doc.searchString !== 'string') {
-          console.warn(`Dokument ${doc._id} hat kein gültiges searchString-Feld`);
-          continue;
-        }
-
-        // Positionen finden
-        const commaIndex = doc.searchString.indexOf(',');
-        const semicolonIndex = doc.searchString.indexOf(';');
-
-        if (commaIndex === -1 || semicolonIndex === -1 || commaIndex > semicolonIndex) {
-          continue;
-        }
-
-        // Prüfen auf weitere Semikolons
-        if (doc.searchString.indexOf(';', semicolonIndex + 1) !== -1) {
-          continue;
-        }
-
-        // Teile extrahieren
-        const nachname = doc.searchString.substring(0, commaIndex).trim();
-        const vornameTeil = doc.searchString.substring(commaIndex + 1, semicolonIndex).trim();
-        const titel = doc.searchString.substring(semicolonIndex + 1).trim();
-
-        if (!nachname || !vornameTeil || !titel) {
-          continue;
-        }
-
-        // Update vorbereiten
-        const updateDoc = {};
-
-        // mediaData.author aktualisieren falls nötig
-        if (!doc.mediaData?.author?.trim()) {
-          updateDoc['mediaData.author'] = `${vornameTeil} ${nachname}`;
-        }
-
-        // mediaData.title aktualisieren falls nötig
-        if (!doc.mediaData?.title?.trim()) {
-          updateDoc['mediaData.title'] = titel;
-        }
-
-        // searchString aktualisieren
-        const neuerSearchString = `${doc.mediaData?.author || `${vornameTeil} ${nachname}`}; ${doc.mediaData?.title || titel}`;
-
-        if (doc.searchString !== neuerSearchString) {
-          updateDoc.searchString = neuerSearchString;
-        }
-
-        // Nur updaten wenn es Änderungen gibt
-        if (Object.keys(updateDoc).length > 0) {
-          await DATA_COLL.updateOne(
-            { _id: doc._id },
-            { $set: updateDoc }
-          );
-          processedCount++;
-          console.log(`Aktualisiert: ${doc._id}`);
-        }
-
-      } catch (docError) {
-        console.error('Fehler bei Dokument:', doc?._id, docError);
-        errorCount++;
-      }
-    }
-
-    console.log(`Verarbeitung abgeschlossen: ${processedCount} aktualisiert, ${errorCount} Fehler`);
-    return { processed: processedCount, errors: errorCount };
-
-  } catch (error) {
-    console.error('Schwerwiegender Fehler:', error);
+    log.error('Datenbankfehler:' + JSON.stringify(error));
     throw error;
   }
 }
 
-async function convertAutor() {
-  const filter = {
-    "mediaData.author": /,/
-  };
-
-  let cursor = DATA_COLL.find(filter);
-
-  //cursor = cursor.limit(count);
-
-  let converted = 0;
-
-  cursor.forEach(doc => {
-    const authorField = doc.mediaData?.author;
-    const title = doc.mediaData?.title;
-
-    if (!authorField || !title) return;
-
-    const authors = authorField.split(";").map(a => a.trim());
-
-    const convertedAuthors = authors.map(a => {
-      if (!a.includes(",")) return a;
-
-      const [last, first] = a.split(",").map(p => p.trim());
-      return `${first} ${last}`.trim();
-    });
-
-    const newAuthor = convertedAuthors.join("; ");
-    const newSearchString = `${newAuthor}; ${title}`;
-
-    DATA_COLL.updateOne(
-      {
-        _id: doc._id,
-        kennung: 'THÜR'
-      },
-      {
-        $set: {
-          "mediaData.author": newAuthor,
-          searchString: newSearchString,
-          lastUpdated: new Date()
-        }
-      }
-    );
-
-    logger.debug(`convertAutor: ${authorField} --> ${newAuthor}`)
-
-    converted++;
-  });
-
-}
-
-export async function convert() {
-  convertAutor();
-  //deleteStringMediaData() 
-  //processSearchStrings();
-}
 

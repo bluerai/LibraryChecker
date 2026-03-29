@@ -189,7 +189,7 @@ html(lang="de")
                 .card-footer.statusmsg.text-primary(style="display: none")
 
 
-              //-.card.mb-2#importQueryData
+              .card.mb-2#importQueryData
                 .card-header(onClick="toggleCardBody(this)")
                   h5.mb-0.text-start Daten online abfragen 
                     i.bi.bi-caret-down-fill.text-primary
@@ -204,28 +204,25 @@ html(lang="de")
                         label.btn.btn-outline-primary(for="dus") DÜS
                         input.btn-check(type="radio" name="kennung" value="HESS" id="hess" autocomplete="off")
                         label.btn.btn-outline-primary(for="hess") HESS
-                        //-input.btn-check(type="radio" name="kennung" value="GOET" id="goet" autocomplete="off")
+                        //-input.btn-check(type="radio" name="themeId" value="GOET" id="goet" autocomplete="off")
                         //-label.btn.btn-outline-primary(for="goet") GOET
-                        //-input.btn-check(type="radio" name="kennung" value="THÜR" id="thur" autocomplete="off")
+                        //-input.btn-check(type="radio" name="themeId" value="THÜR" id="thur" autocomplete="off")
                         //-label.btn.btn-outline-primary(for="thur") THÜR
 
-                  .row.d-flex.align-items-center.mb-4
+                  //-.row.d-flex.align-items-center.mb-4
                     .col-6         
                       label.form-label(for="count") Anzahl zu ladener Datensätze (in Reihenfolge der Neuzugänge):
                     .col-6         
                       .btn-group(role="group")
-                        each val in [20, 50, 100, 200, 300]
-                          input.btn-check(type="radio" name="count" value=val id=`q${val}`)
-                          label.btn.btn-outline-primary(for=`q${val}`)= val
+                        each val in [40, 80, 100, 200, 300]
+                          input.btn-check(type="radio" name="limit" value=val id=`limit${val}`)
+                          label.btn.btn-outline-primary(for=`limit${val}`)= val
                   
                   .text-end
                     button.btn.btn-primary(onclick="importQueryData()") Abfrage starten
 
                 .card-footer.statusmsg.text-primary(style="display: none")
 
-
-
-        
             .card.mb-2#bulkClearance
               .card-header(onClick="toggleCardBody(this)")
                 h5.mb-0 Aufräumen

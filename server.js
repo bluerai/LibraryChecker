@@ -7,7 +7,7 @@ import os from 'os';
 import * as model from './app/model.js';
 import router from './app/router.js';
 import backupRouter from './backup/router.js';
-import { logger } from './utils/log.js';
+import { log } from './utils/log.js';
 import { verifyAction, loginAction, protect } from './auth/index.js';
 
 const app = express();
@@ -60,7 +60,7 @@ try {
   const result = await fetch(`http://${host}/api/health`); //{"healthy":true}
   const data = await result.json();
   if (data.healthy)
-    logger.info(`Cassis host ${host} found & working correctly.`);
+    log(`Cassis host ${host} found & working correctly.`);
   else
     throw new Error(`Cassis-Server not healthy.`)
 } catch (error) {
@@ -85,8 +85,8 @@ app.use('/api/backups', protect, backupRouter);
 app.use('/', protect, router);
 
 if (HTTPS_PORT >= 0) {
-  const keyfile = path.join(process.env.CHECKLIB_DATADIR, 'config', KEYFILE);
-  const certfile = path.join(process.env.CHECKLIB_DATADIR, 'config', CERTFILE);
+  const keyfile = path.join(process.env.DATADIR, 'config', KEYFILE);
+  const certfile = path.join(process.env.DATADIR, 'config', CERTFILE);
   if (fs.existsSync(keyfile) && fs.existsSync(certfile)) {
 
     //key + Cert vorhanden, also https, 
@@ -95,14 +95,14 @@ if (HTTPS_PORT >= 0) {
       cert: fs.readFileSync(certfile),
     };
     https.createServer(options, app).listen(HTTPS_PORT, () => {
-      logger.info(`Https-Server is listening to https://${getLocalIp()}:${HTTPS_PORT}`)
+      log(`Https-Server is listening to https://${getLocalIp()}:${HTTPS_PORT}`)
     });
   }
 }
 
 if (HTTP_PORT >= 0) {
   app.listen(HTTP_PORT, () => {
-    logger.info(`Http-Server is listening to http://${getLocalIp()}:${HTTP_PORT}`)
+    log(`Http-Server is listening to http://${getLocalIp()}:${HTTP_PORT}`)
   })
 }
 
@@ -124,16 +124,16 @@ const getLocalIp = () => {
 
 async function healthAction(request, response) {
   try {
-    //logger.debug("healthAction");
+    //log.debug("healthAction");
     const count = await model.countItems();
 
-    logger.debug("healthAction: " + request.protocol + "-Server still healthy!");
+    log.debug("healthAction: " + request.protocol + "-Server still healthy!");
     response.json({ healthy: true, count });
   }
   catch (error) {
     const message = "CheckLib: Error on " + request.protocol + "-Server: " + error.message;
-    logger.error(message);
-    if (error.stack) logger.debug(error.stack);
+    log.error(message);
+    if (error.stack) log.debug(error.stack);
     if (response) {
       response.json({ healthy: false, error: error.message });
     }
