@@ -113,4 +113,4 @@ if (messagingfile) {
 }
 
 log("Messaging by " + Push.name);
-export const push = Push;
+export const pushover = Push;

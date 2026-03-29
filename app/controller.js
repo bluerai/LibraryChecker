@@ -1,5 +1,5 @@
 import { join } from 'path';
-import { push } from '../utils/pushover.js';
+import { pushover } from '../utils/pushover.js';
 
 import {
   getItem, findItemId, findItem, findEBooksToCheck, findItemsToClear, findSiblings, changeItem,
@@ -498,7 +498,7 @@ export async function bulkUpdate(items, minWait) {   //minWait in sec zwischen d
     } catch (err) {
       const message = `bulkUpdate: Fehler bei: "${item.kennung}" "${item.searchString}":`
       log.error(message, err);
-      push.syswarn(message, "Library Checker");
+      pushover.syswarn(message, "Library Checker");
       return { error: message };
     }
   }
@@ -615,7 +615,7 @@ export const clearAction = async (req, res) => {
     let message = `Einträge, geprüft: ${checkedCount}, erledigt: ${doneCount}, gelöscht: ${deleteCount}.`;
     if (errorCount > 0) message += `. Fehler: ${errorCount}`
     log(message);
-    push.sysnote(message, 'Library Checker');
+    pushover.sysnote(message, 'Library Checker');
 
     res.json({ counts: { checkedCount, doneCount, deleteCount, errorCount }, message });
 
@@ -784,7 +784,7 @@ export async function updateSearchItems(items) {
             upsertItem(result);
 
             item.available.push(kennung);
-            push.sysinfo(`"${item.searchString}" ist jetzt verfügbar!`, `Library Checker ${kennung}`);
+            pushover.sysinfo(`"${item.searchString}" ist jetzt verfügbar!`, `Library Checker ${kennung}`);
 
             item.status = "=";
 

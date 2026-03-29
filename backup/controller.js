@@ -1,9 +1,5 @@
 import { BackupService } from './model.js';
 
-import { push } from '../utils/pushover.js';
-import { log } from '../utils/log.js';
-
-
 export class BackupController {
   static async createBackup(req, res) {
     try {

@@ -2,7 +2,7 @@
 
 import { CronJob } from 'cron';
 
-import { push } from './pushover.js';
+import { pushover } from './pushover.js';
 import { log } from './log.js';
 
 import { findEBooksToCheck } from '../app/model.js';
@@ -92,21 +92,21 @@ async function checkerJob(days, kennungen) {        //Einzelprüfungen
 
       if (data.success) {
         log(data.success);
-        push.sysnote(data.success, `Library Checker Aktualisierung bis ${days} Tage`);
+        pushover.sysnote(data.success, `Library Checker Aktualisierung bis ${days} Tage`);
 
       } else {
         log.error(data.error);
-        push.syswarn(data.error, `Library Checker Aktualisierung bis ${days} Tage`);
+        pushover.syswarn(data.error, `Library Checker Aktualisierung bis ${days} Tage`);
       }
 
     } catch (error) {
       const message = 'Cron: checkerJob fehlgeschlagen": ' + error.message;
       log.error(message);
       log.debug(error.stack);
-      push.syserror(message);
+      pushover.syserror(message);
     }
   } else {
-    push.sysinfo(`checkerJob: Error accessing Cassis host`, `Check_lib`);
+    pushover.sysinfo(`checkerJob: Error accessing Cassis host`, `Check_lib`);
   }
 }
 
@@ -123,19 +123,19 @@ async function queryJob() {
         log(`queryJob: Online-Abfrage ${target.kennung}: ${result.message}`);
 
         if (result.available > 0)
-          push.sysinfo(result.message, `Online-Abfrage ${target.kennung}`);
+          pushover.sysinfo(result.message, `Online-Abfrage ${target.kennung}`);
         else
-          push.sysnote(result.message, `Online-Abfrage ${target.kennung}`);
+          pushover.sysnote(result.message, `Online-Abfrage ${target.kennung}`);
 
       } catch (error) {
         const message = `Cron: queryJob für ${target.kennung} fehlgeschlagen": ${error.message}`;
         log.error(message);
         log.debug(error.stack);
-        //push.syserror(message);
+        //pushover.syserror(message);
       }
     }
   } else {
-    push.sysinfo(`queryJob: Error accessing Cassis host`, `Check_lib`);
+    pushover.sysinfo(`queryJob: Error accessing Cassis host`, `Check_lib`);
   }
 }
 
@@ -147,13 +147,13 @@ async function backupJob() {
 
     const message = "Cron: Backup erfolgreich abgeschlossen.";
     log(message);
-    push.sysnote(message, 'Library Checker Backup');
+    pushover.sysnote(message, 'Library Checker Backup');
 
   } catch (error) {
     const message = '"Cron: Backup fehlgeschlagen": ' + error.message;
     log.error(message);
     log.debug(error.stack);
-    push.syserror(message, 'Library Checker');
+    pushover.syserror(message, 'Library Checker');
   }
 }
 
@@ -169,7 +169,7 @@ async function targetSearchJob() {
     const message = '"Cron: targetSearchJob fehlgeschlagen": ' + error.message;
     log.error(message);
     log.debug(error.stack);
-    push.syserror(message, 'Library Checker');
+    pushover.syserror(message, 'Library Checker');
   }
 }
 
