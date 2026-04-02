@@ -286,7 +286,7 @@ export async function upsertItems(items) {
     try {
       resultCounts = await DATA_COLL.bulkWrite(bulkOps, { ordered: false });
 
-      log.debug('upsertItems: resultCounts:', resultCounts)
+      log.debug('upsertItems: resultCounts:', JSON.stringify(resultCounts))
 
       // Fehler protokollieren
       if (resultCounts.writeErrors > 0) {

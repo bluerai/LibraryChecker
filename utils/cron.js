@@ -133,6 +133,8 @@ async function queryJob() {
         log.debug(error.stack);
         //pushover.syserror(message);
       }
+
+      await new Promise(r => setTimeout(r, 10 * 60 * 1000));
     }
   } else {
     pushover.sysinfo(`queryJob: Error accessing Cassis host`, `Check_lib`);

@@ -789,15 +789,14 @@ async function bulkUpdate() {
     });
 
     const data = await result.json();
-
-    statusmsg.textContent = "";
-    statusmsg.style.display = 'none';
-
+    
     if (data.success) {
-      showToast(data.success, 'warning');
+      statusmsg.textContent = data.success;
       reloadList();
 
     } else {
+      statusmsg.textContent = "";
+      statusmsg.style.display = 'none';
       showToast(data.error, 'warning');
 
     }

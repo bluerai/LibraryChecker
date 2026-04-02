@@ -204,21 +204,19 @@ export async function importData(kennung, limit) {
 
   const queryData = await queryOnleihe(kennung, limit);
   log(`queryData: Found: ${queryData.length} item(s)`);
+  log(items);
 
   const { results, counts } = await processImportedData(kennung, queryData);
 
-  log("importData: counts=", counts);
+  log("importData: counts=", JSON.stringify(counts));
 
   let message;
   if (results && results.length > 0) {
     const resultMsg = await upsertItems(results);
-
-    message = `Insgesamt ${queryData.length} Medien geladen, 
-    jetzt ausleihbar: ${counts.availableCount}, 
-    neu: ${resultMsg.resultCounts?.insertedCount},
-    aktualisiert: ${resultMsg.resultCounts?.modifiedCount}, 
-    in Cassis: ${counts.cassisCount}`
+    message = `${queryData.length} Bücher, neu: ${resultMsg.resultCounts?.insertedCount}, verfügbar: ${counts.availableCount}, Datum aktualisiert: ${counts.availDateCount}`
   }
+
+  log(results);
 
   return ({ available: counts.availableCount, message });
 }
@@ -503,7 +501,8 @@ export async function bulkUpdate(items, minWait) {   //minWait in sec zwischen d
     }
   }
 
-  const message = `Geprüfte Datensätze: ${items.length}, Datum geändert: ${availDateCount}, verfügbare E-Books: ${availCount}`;
+  const message = `${items.length} Bücher, verfügbar: ${availCount}, Datum aktualisiert: ${availDateCount}, `;
+
   log(message);
   return { success: message };
 }
@@ -558,7 +557,7 @@ export async function jsonFileAction(req, res) {
 
       if (result.success) {
         const msg = (result.resultCounts) ?
-          `[${kennung}] Hochgeladene Datensätze: ${itemsCount}, davon neu eingefügt: ${result.resultCounts?.insertedCount}, vorhandene Datensätze aktualisiert: ${result.resultCounts?.updatedCount}` :
+          `[${kennung}] Hochgeladene Datensätze: ${itemsCount}, davon neu: ${result.resultCounts?.insertedCount}, aktualisiert: ${result.resultCounts?.updatedCount}` :
           `${result.message}`
         log(msg)
         res.status(200).json({ success: msg });

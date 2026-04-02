@@ -144,6 +144,9 @@ export async function checkOnleihe(item0, limit = 1) {
 
   else return [];
 
+  log("checkOnleihe url:", url);
+  log({ item: item0, limit: limit });
+
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -253,10 +256,12 @@ export async function processImportedData(kennung, data) {
   let reservationsCount = 0;
   let cassisCount = 0;
   let availableCount = 0;
+  let availDateCount = 0;
 
   for (const card of data) {
 
-    let available = card.datum || today;
+    const datum = card.datum || today;
+    let available = datum
     const mediaType = card.mediaType;
     const mediaId = card.mediaId;
     const author = card.author;
@@ -299,6 +304,8 @@ export async function processImportedData(kennung, data) {
       }
     }
 
+    if (datum !== available && listType === 'watchlist') availDateCount++;
+
     const mediaData = {
       available,
       author: author,
@@ -320,10 +327,12 @@ export async function processImportedData(kennung, data) {
     if (mediaData.mediaId && mediaData.mediaId.length > 12) result.mediaId = mediaData.mediaId;
 
     // nur sichern, wenn nicht in Cassis!!!
-    if (result.status !== "^") results.push(result);
+    if (result.status !== "^") {
+      results.push(result);
+    }
 
   }
-  const counts = { availableCount, watchListCount, donelistCount, reservationsCount, cassisCount };
+  const counts = { availableCount, watchListCount, donelistCount, reservationsCount, cassisCount, availDateCount };
 
   return { results, counts };
 
