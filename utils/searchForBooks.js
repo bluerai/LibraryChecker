@@ -167,19 +167,18 @@ export async function checkOnleihe(item0, limit = 1) {
   for (let index = 0; index < data.length; index++) {
     const item = data[index];
     let available = item.datum;
+
     let status = "";
 
-    if (available === "") {
+    if (available) {
+      status = "=";   //ausgeliehen, vormerkbar
+    } else {
       available = today;
       status = "*";    //jetzt ausleihbar
-
-    } else {
-      status = "=";   //ausgeliehen, vormerkbar
     }
 
     const author = item.author?.replaceAll(/[\n ]+/g, " ");  //ggf. mehrere Autoren!
     const title = item.title?.replaceAll(/[\n ]+/g, " ");
-
 
     let searchSpec = "";
     if (item0.searchString) {
@@ -226,7 +225,15 @@ export async function checkOnleihe(item0, limit = 1) {
 export async function queryOnleihe(kennung, limit) {
   log(`queryOnleihe: kennung=${kennung}, limit=${limit}`);
 
-  const url = `http://${scraperHost}/list/${encodeURIComponent(kennung)}/${limit}`;
+  let url;
+
+  if (['HESS', 'DÜS'].includes(kennung))
+    url = `http://${scraperHost}/list3/${encodeURIComponent(kennung)}/${limit}`;
+
+  else if (['THÜR', 'GOET'].includes(kennung))
+    url = `http://${scraperHost}/list2/${encodeURIComponent(kennung)}/${limit}`;
+
+  else return [];
 
   let data = [];
   try {
@@ -256,12 +263,10 @@ export async function processImportedData(kennung, data) {
   let reservationsCount = 0;
   let cassisCount = 0;
   let availableCount = 0;
-  let availDateCount = 0;
 
   for (const card of data) {
 
-    const datum = card.datum || today;
-    let available = datum
+    let datum = card.datum;
     const mediaType = card.mediaType;
     const mediaId = card.mediaId;
     const author = card.author;
@@ -279,7 +284,7 @@ export async function processImportedData(kennung, data) {
       const item0 = await checkReserved(kennung, searchString);
       if (item0) {
         //searchString = item0.searchString
-        available = item0.datum; //Datum bleibt!
+        datum = item0.datum; //Datum bleibt!
         status = "#";
         listType = 'reservations';
         reservationsCount++
@@ -292,8 +297,9 @@ export async function processImportedData(kennung, data) {
           listType = 'donelist';
           donelistCount++
         } else {
-          if (available === "") {
+          if (datum === "") {
             status = "*";
+            datum = today;
             availableCount++;
           } else {
             status = "=";
@@ -304,10 +310,7 @@ export async function processImportedData(kennung, data) {
       }
     }
 
-    if (datum !== available && listType === 'watchlist') availDateCount++;
-
     const mediaData = {
-      available,
       author: author,
       title,
       kennung,
@@ -315,7 +318,7 @@ export async function processImportedData(kennung, data) {
     }
 
     const result = {
-      datum: available,
+      datum,
       status,
       kennung,
       searchString,
@@ -324,16 +327,17 @@ export async function processImportedData(kennung, data) {
       listType
     };
 
-    if (mediaData.mediaId && mediaData.mediaId.length > 12) result.mediaId = mediaData.mediaId;
+    if (mediaData.mediaId && mediaData.mediaId.length > 12) 
+      result.mediaId = mediaData.mediaId;
 
-    // nur sichern, wenn nicht in Cassis!!!
-    if (result.status !== "^") {
+    // nur sichern, wenn nicht in Cassis und nicht in "Erledigt"
+    if (result.status !== "^" && result.listType !== 'donelist') {
       results.push(result);
     }
 
   }
-  const counts = { availableCount, watchListCount, donelistCount, reservationsCount, cassisCount, availDateCount };
+  //const counts = { availableCount, watchListCount, donelistCount, reservationsCount, cassisCount};
 
-  return { results, counts };
+  return { results, availableCount };
 
 }

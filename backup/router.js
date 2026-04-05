@@ -1,6 +1,5 @@
 import express from 'express';
 import { BackupController } from './controller.js';
-import { backupCronJob } from '../utils/cron.js';
 import path from 'path';
 import fs from 'fs';
 import { log } from '../utils/log.js';
@@ -88,17 +87,5 @@ router.get('/:filename/download', async (req, res) => {
     });
   }
 });
-
-
-// Automatische Backups aktivieren
-(backupCronJob) && backupCronJob.start();
-
-if (log.isLevelEnabled('debug')) {
-  try {
-    (backupCronJob) && log.debug(`Cron: Next backupCronJob: ${backupCronJob.nextDate().toISO()}`);
-  } catch (error) {
-    log.error(error)
-  }
-}
 
 export default router;

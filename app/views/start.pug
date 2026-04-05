@@ -204,10 +204,10 @@ html(lang="de")
                         label.btn.btn-outline-primary(for="dus") DÜS
                         input.btn-check(type="radio" name="kennung" value="HESS" id="hess" autocomplete="off")
                         label.btn.btn-outline-primary(for="hess") HESS
-                        //-input.btn-check(type="radio" name="themeId" value="GOET" id="goet" autocomplete="off")
-                        //-label.btn.btn-outline-primary(for="goet") GOET
-                        //-input.btn-check(type="radio" name="themeId" value="THÜR" id="thur" autocomplete="off")
-                        //-label.btn.btn-outline-primary(for="thur") THÜR
+                        input.btn-check(type="radio" name="kennung" value="GOET" id="goet" autocomplete="off")
+                        label.btn.btn-outline-primary(for="goet") GOET
+                        input.btn-check(type="radio" name="kennung" value="THÜR" id="thur" autocomplete="off")
+                        label.btn.btn-outline-primary(for="thur") THÜR
 
                   //-.row.d-flex.align-items-center.mb-4
                     .col-6         
@@ -222,6 +222,33 @@ html(lang="de")
                     button.btn.btn-primary(onclick="importQueryData()") Abfrage starten
 
                 .card-footer.statusmsg.text-primary(style="display: none")
+
+              .card.mb-2#cronJobs
+                .card-header(onClick="toggleCardBody(this)")
+                  h5.mb-0 Cron-Jobs
+                    i.bi.bi-caret-down-fill.text-primary 
+
+                .card-body(style="display: none")
+                  .row.align-items-center
+                    .col-12#cron_table
+                      table(border="1", cellpadding="8", cellspacing="0", style="border-collapse: collapse;")
+                        thead
+                          tr
+                            th Job Name
+                            th Next Execution Time
+                            th Pattern
+                        tbody
+                          each job in cronJobs
+                            if job
+                              tr
+                                td= job.context
+                                td= job.nextDate().toISO().split('.')[0].replace('T', ', ')
+                                td= job.cronTime
+                  .row.align-items-center
+                    .col-12.text-end
+                      button.btn.btn-primary(onclick="getCronJobs()") Aktualisieren                                
+
+              .card-footer.statusmsg.text-primary(style="display: none")
 
             .card.mb-2#bulkClearance
               .card-header(onClick="toggleCardBody(this)")

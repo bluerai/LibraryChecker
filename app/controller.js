@@ -1,5 +1,6 @@
 import { join } from 'path';
 import { pushover } from '../utils/pushover.js';
+import { cronJobs, checkerCronJob, fullCheckerCronJob, queryCronJob, targetSearchCronJob, backupCronJob } from '../utils/cron.js';
 
 import {
   getItem, findItemId, findItem, findEBooksToCheck, findItemsToClear, findSiblings, changeItem,
@@ -74,7 +75,8 @@ export async function homeAction(req, res) {
     res.render('start', {
       mediaTypes,
       selectedList: null,
-      selectedKennung: null
+      selectedKennung: null,
+      cronJobs
     });
   } catch (err) {
     errorHandler(err, 'homeAction', res);
@@ -203,22 +205,25 @@ export async function importData(kennung, limit) {
   log.debug(`importData: Abfrage gestartet: Bibliothek=${kennung}, Limit: ${limit}`);
 
   const queryData = await queryOnleihe(kennung, limit);
-  log(`queryData: Found: ${queryData.length} item(s)`);
-  log(items);
+  if (queryData.error) return queryData;
 
-  const { results, counts } = await processImportedData(kennung, queryData);
+  log(`queryData: ${kennung}: Found ${queryData.length} item(s)`);
+  //log(queryData);
 
-  log("importData: counts=", JSON.stringify(counts));
+  const { results, availableCount } = await processImportedData(kennung, queryData);
+
+  log("importData: availableCount=", availableCount);
+  //log(results);
 
   let message;
   if (results && results.length > 0) {
-    const resultMsg = await upsertItems(results);
-    message = `${queryData.length} Bücher, neu: ${resultMsg.resultCounts?.insertedCount}, verfügbar: ${counts.availableCount}, Datum aktualisiert: ${counts.availDateCount}`
+    const { resultCounts, datumChangedCount } = await upsertItems(results);
+    message = `${kennung}: ${queryData.length} Bücher, neu: ${resultCounts?.upsertedCount}, verfügbar: ${availableCount}, aktualisiert: ${resultCounts?.modifiedCount}, neues Datum: ${datumChangedCount}`
+  } else {
+    message = `${kennung}: 0 Bücher, neu: 0, verfügbar: 0, aktualisiert: 0, neues Datum: 0`
   }
 
-  log(results);
-
-  return ({ available: counts.availableCount, message });
+  return ({ available: availableCount, success: message });
 }
 
 export async function importAction(req, res) {
@@ -229,7 +234,7 @@ export async function importAction(req, res) {
 
     const result = await importData(kennung, limit);
 
-    log(`importAction: ${result.message}`);
+    log(`importAction: ${kennung}: ${(result.success) ? result.success : result.error}`);
 
     res.status(200).json(result);
 
@@ -257,6 +262,7 @@ async function singleSearch(item) {
       item.listType = result.listType;
       item.mediaId = result.mediaId;
       log.debug(`singleSearch: > ${result.datum} erledigt: ${item.searchString}`)
+
     } else {
 
       const results = await checkOnleihe(item, 1);
@@ -668,6 +674,26 @@ export async function itemAction(req, res) {
   }
 }
 
+export async function cronAction(req, res) {
+  try {
+    const { item } = req.body;
+    log(`cronAction: item=${JSON.stringify(item)}`);
+
+    let html = `<table border="1" cellpadding="8" cellspacing="0" style="border - collapse: collapse;">
+    <thead><tr><th>Job Name</th><th>Next Execution Time</th><th>Pattern</th></tr></thead>
+    <tbody>`
+    cronJobs.forEach((job) => {
+      if (job)
+        html += `<tr><td>${job?.context}</td><td>${job?.nextDate().toISO().split('.')[0].replace('T', ', ') }</td><td>${job?.cronTime}</td></tr>`
+    })
+    html += `</tbody></table>`
+
+    res.json({ html });
+
+  } catch (err) {
+    errorHandler(err, 'cronAction', res);
+  }
+};
 
 //**************** waitist & searchItems */
 
@@ -783,7 +809,7 @@ export async function updateSearchItems(items) {
             upsertItem(result);
 
             item.available.push(kennung);
-            pushover.sysinfo(`"${item.searchString}" ist jetzt verfügbar!`, `Library Checker ${kennung}`);
+            pushover.sysnote(`"${item.searchString}" ist jetzt verfügbar!`, `Library Checker ${kennung}`);
 
             item.status = "=";
 

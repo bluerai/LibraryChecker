@@ -9,6 +9,7 @@ import router from './app/router.js';
 import backupRouter from './backup/router.js';
 import { log } from './utils/log.js';
 import { verifyAction, loginAction, protect } from './auth/index.js';
+import { cronJobs, checkerCronJob, fullCheckerCronJob, queryCronJob, targetSearchCronJob, backupCronJob } from './utils/cron.js';
 
 const app = express();
 
@@ -68,7 +69,8 @@ try {
   process.exit(1);
 }
 
-app.use(morgan('common', { immediate: true,
+app.use(morgan('common', {
+  immediate: true,
   skip: (req, res) => req.url.startsWith('/app/cover')
 }));
 /* 'tiny': Gibt minimale Informationen aus(z.B.GET / 200 10 - 1.234 ms).
@@ -83,6 +85,10 @@ app.post('/login', loginAction);
 app.get('/api/health', healthAction);
 app.use('/api/backups', protect, backupRouter);
 app.use('/', protect, router);
+
+
+log.info('cron-Jobs starten');
+
 
 if (HTTPS_PORT >= 0) {
   const keyfile = path.join(process.env.DATADIR, 'config', KEYFILE);

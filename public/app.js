@@ -174,9 +174,6 @@ async function reloadList(listpath, targetId) {
       if (result.ok) {
         document.getElementById('table_container').innerHTML = data.html;
         //document.getElementById('itemlist_panel').scrollIntoView({ block: 'start' });
-
-        filterTable();
-
         LIST_FETCHPATH = listpath;
         if (targetId) {
           const target = document.getElementById(targetId);
@@ -227,6 +224,7 @@ function loadSearchModal() {
     FILTER_TEXT = searchInput.value;
     FILTER_PRIO = prioInput.checked;
     FILTER_RESERV = reservInput.checked;
+
     filterTable(FILTER_TEXT, FILTER_PRIO, FILTER_RESERV);
     searchModal.hide();
   }
@@ -316,10 +314,6 @@ function closeItemMenu() {  // menu - Schließen
 const kennungen = ['DÜS', 'HESS', 'GOET', 'THÜR'];
 
 async function updateItem(item, targetId) {  // Menu - aktualisieren
-  if (!kennungen.includes(item.kennung)) {
-    showToast("Die Abfragean an diese Bibliothek sind nicht implementiert!", 'warning');
-    return;
-  }
 
   const statusmsg = document.querySelector('#itemData  .statusmsg');
   statusmsg.style.display = 'block';
@@ -368,12 +362,20 @@ async function updateItem(item, targetId) {  // Menu - aktualisieren
 }
 
 
-async function importItem(item, targetId, event) {  // Menu - übernehmen
+async function importItem(item, targetId, event) {  // Menu - import
   if (event) event.stopPropagation();
+
+  let statusmsg;
   try {
     if (!event) {     //Aufruf aus item-Maske
+      statusmsg = document.querySelector('#itemData .statusmsg');
       item.searchString = document.getElementById('searchString').value;
+    } else {       //Aufruf aus Liste von Suchergebnissen
+      statusmsg = document.querySelector('#itemlist_panel .statusmsg');
     }
+    statusmsg.style.display = 'block';
+    insertTextWithSpinner(statusmsg, "Medium wird importiert ... ");
+
     if (!item.listType) item.listType = 'watchlist';
 
     const upsert = true;
@@ -399,10 +401,12 @@ async function importItem(item, targetId, event) {  // Menu - übernehmen
       document.getElementById('item_panel').innerHTML = '';
       document.getElementById('header_panel').style.display = 'block';
       document.getElementById('table_container').style.display = 'block';
+      statusmsg.style.display = 'block';
 
     } else {
       showToast('importItem: ' + data.message, 'warning');
     }
+    statusmsg.style.display = 'none';
 
   } catch (error) {
     showToast('importItem Fehler: ' + error.message, 'warning');
@@ -464,10 +468,7 @@ async function setItemDone(itemId, targetId, event) {
       if (result.ok) {
         if (targetId && document.getElementById(targetId)) {
           if (targetId.startsWith('item_')) {
-            /*             document.getElementById(targetId).remove();
-                        const listLen = document.getElementById('listLength');
-                        if (listLen) listLen.innerHTML = listLen.innerHTML - 1; */
-            reloadList();
+            RELOAD_NEEDED = true;
           } else if (targetId.startsWith('result_')) {
             document.getElementById(targetId).outerHTML = data.html;
           }
@@ -713,14 +714,37 @@ async function importQueryData() {
     });
 
     const data = await result.json();
-    if (result.ok) {
-      statusmsg.textContent = data.message;
+
+    if (data.success) {
+      statusmsg.textContent = data.success;
       RELOAD_NEEDED = true;
 
     } else {
       statusmsg.textContent = "";
       statusmsg.style.display = 'none';
-      showToast('importQueryData: ' + data.message, 'warning');
+      showToast('importQueryData: ' + data.error, 'warning');
+    }
+
+  } catch (error) {
+    showToast(statusText.textContent = 'importQueryData: ' + error.message, 'warning');
+  }
+}
+
+async function getCronJobs() {
+  try {
+
+    const result = await fetch('/cron', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
+      body: JSON.stringify({})
+    });
+
+    const data = await result.json();
+
+    if (result.ok) {
+      document.getElementById('cron_table').innerHTML = data.html;
+    } else {
+      document.getElementById('cron_table').innerHTML = 'Keine Cron-Jobs definiert.';
     }
 
   } catch (error) {
@@ -789,7 +813,7 @@ async function bulkUpdate() {
     });
 
     const data = await result.json();
-    
+
     if (data.success) {
       statusmsg.textContent = data.success;
       reloadList();

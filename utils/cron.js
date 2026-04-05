@@ -19,8 +19,9 @@ export const checkerCronJob =
     process.env.CRON_CHECKER, // cronTime
     checkerJob22, // onTick
     null, // onComplete
-    false, // start
-    process.env.TZ || "Europe/Berlin"// timeZone
+    false, // automatisch starten
+    process.env.TZ || "Europe/Berlin", // timeZone
+    "checkerCronJob"
   );
 
 export const fullCheckerCronJob =
@@ -29,15 +30,16 @@ export const fullCheckerCronJob =
     process.env.CRON_FULLCHECKER, // cronTime
     checkerJob999, // onTick
     null, // onComplete
-    false, // start
-    process.env.TZ || "Europe/Berlin"// timeZone
+    false, // automatisch starten
+    process.env.TZ || "Europe/Berlin", // timeZone
+    "fullCheckerCronJob"
   );
 
 const queryTargets = [
-  //{ kennung: 'THÜR', limit: 80 },
+  { kennung: 'THÜR', limit: 80 },
   { kennung: 'HESS', limit: 80 },
-  { kennung: 'DÜS', limit: 80 },
-  //{ kennung: "GOET", limit: 40 }
+  { kennung: "GOET", limit: 40 },
+  { kennung: 'DÜS', limit: 80 }
 ];
 
 export const queryCronJob =
@@ -46,8 +48,9 @@ export const queryCronJob =
     process.env.CRON_QUERY, // cronTime
     queryJob, // onTick
     null, // onComplete
-    false, // start
-    process.env.TZ || "Europe/Berlin"// timeZone
+    false, // automatisch starten
+    process.env.TZ || "Europe/Berlin", // timeZone
+    "queryCronJob"
   );
 
 export const backupCronJob =
@@ -56,8 +59,9 @@ export const backupCronJob =
     process.env.CRON_BACKUP, // cronTime
     backupJob, // onTick
     null, // onComplete
-    false, // start
-    process.env.TZ || "Europe/Berlin"// timeZone
+    false, // automatisch starten
+    process.env.TZ || "Europe/Berlin", // timeZone
+    "backupCronJob"
   );
 
 
@@ -67,8 +71,9 @@ export const targetSearchCronJob =
     process.env.CRON_TARGETSEARCH, // cronTime
     targetSearchJob, // onTick
     null, // onComplete
-    true, // start
-    process.env.TZ || "Europe/Berlin"// timeZone
+    true, // automatisch starten
+    process.env.TZ || "Europe/Berlin", // timeZone
+    "targetSearchCronJob"
   );
 
 export const targetSearchCronJob2 =
@@ -77,22 +82,27 @@ export const targetSearchCronJob2 =
     process.env.CRON_TARGETSEARCH2, // cronTime
     targetSearchJob, // onTick
     null, // onComplete
-    true, // start
-    process.env.TZ || "Europe/Berlin"// timeZone
+    true, // automatisch starten
+    process.env.TZ || "Europe/Berlin", // timeZone
+    "targetSearchCronJob2"
   );
 
 //--- Job to call by Cron Jobs--------
 
 async function checkerJob(days, kennungen) {        //Einzelprüfungen
-  if (await checkCassisHealth()) {
+  console.log("checkerJob starting ....")
+  let retries = 0;
+  while (++retries <= 3)
     try {
       const items = await findEBooksToCheck(days, kennungen)  // die nächsten days Tage
-      log(`Cron: checkerJob startet. Es werden ${items.length} Einträge überprüft.`);
+      log(`Cron: checkerJob: ${items.length} Einträge werden überprüft...`);
+
       const data = await bulkUpdate(items, 24);  //minWait in sec zwischen den Überprüfungen maxWait = 5 * minWait
 
       if (data.success) {
         log(data.success);
         pushover.sysnote(data.success, `Library Checker Aktualisierung bis ${days} Tage`);
+        break;
 
       } else {
         log.error(data.error);
@@ -105,43 +115,56 @@ async function checkerJob(days, kennungen) {        //Einzelprüfungen
       log.debug(error.stack);
       pushover.syserror(message);
     }
-  } else {
-    pushover.sysinfo(`checkerJob: Error accessing Cassis host`, `Check_lib`);
-  }
+  console.log("checkerJob finished.")
 }
 
-function checkerJob22() { checkerJob(22, ["HESS", "DÜS"]) }
-function checkerJob999() { checkerJob(999, ["HESS", "DÜS"]) }
+
+function checkerJob22() { checkerJob(22, ["HESS", "DÜS", "THÜR", "GOET"]) }
+function checkerJob999() { checkerJob(999, ["HESS", "DÜS", "THÜR", "GOET"]) }
 
 
 async function queryJob() {
-  if (await checkCassisHealth()) {
+  console.log("queryJob starting ....")
+  let success = new Set();
+
+  let retries = 0;
+  while (++retries <= 3) {
     for (const target of queryTargets) {
-      try {
-        const result = await importData(target.kennung, target.limit);
+      console.log('retries:', retries, 'kennung:', target.kennung);
 
-        log(`queryJob: Online-Abfrage ${target.kennung}: ${result.message}`);
+      if (!success.has(target.kennung)) {
+        try {
+          const result = await importData(target.kennung, target.limit);
 
-        if (result.available > 0)
-          pushover.sysinfo(result.message, `Online-Abfrage ${target.kennung}`);
-        else
-          pushover.sysnote(result.message, `Online-Abfrage ${target.kennung}`);
+          log(`queryJob: Online-Abfrage ${target.kennung}: ${result.message}`);
 
-      } catch (error) {
-        const message = `Cron: queryJob für ${target.kennung} fehlgeschlagen": ${error.message}`;
-        log.error(message);
-        log.debug(error.stack);
-        //pushover.syserror(message);
+          if (result.success) {
+            if (result.avaiable !== 0)
+              pushover.sysinfo(result.success, `Online-Abfrage ${target.kennung}`);
+            else
+              pushover.sysnote(result.success, `Online-Abfrage ${target.kennung}`);
+
+            success.add(target.kennung);
+          }
+          else
+            pushover.syswarn(result.error, `Online-Abfrage ${target.kennung}`);
+
+        } catch (error) {
+          const message = `Cron: queryJob für ${target.kennung} fehlgeschlagen": ${error.message}`;
+          log.error(message);
+          log.debug(error.stack);
+          //pushover.syserror(message);
+        }
+
+        await new Promise(r => setTimeout(r, 10 * 1000));
       }
-
-      await new Promise(r => setTimeout(r, 10 * 60 * 1000));
     }
-  } else {
-    pushover.sysinfo(`queryJob: Error accessing Cassis host`, `Check_lib`);
+    if (success.size == 4) break;
   }
+  console.log("queryJob finished.", success)
 }
 
-async function backupJob() {
+export async function backupJob() {
   try {
     log("Cron: backupJob startet.", 'Library Checker');
 
@@ -159,7 +182,7 @@ async function backupJob() {
   }
 }
 
-async function targetSearchJob() {
+export async function targetSearchJob() {
   try {
     log("Cron: targetSearchJob startet.");
 
@@ -175,6 +198,7 @@ async function targetSearchJob() {
   }
 }
 
+/* 
 async function checkCassisHealth() {
   try {
     const host = process.env.CASSIS_HOST;
@@ -193,3 +217,33 @@ async function checkCassisHealth() {
     return false;
   }
 }
+ */
+
+// Starten
+
+
+export let cronJobs = [
+  queryCronJob, checkerCronJob, fullCheckerCronJob, targetSearchCronJob, backupCronJob
+];
+
+//cronJobs
+(checkerCronJob) &&
+  checkerCronJob.start();
+log.info(`Cron: Next checkerCronJob: ${checkerCronJob?.nextDate().toISO()}`);
+
+(fullCheckerCronJob) &&
+  fullCheckerCronJob.start();
+log.info(`Cron: Next fullCheckerCronJob: ${fullCheckerCronJob?.nextDate().toISO()}`);
+
+(queryCronJob) &&
+  queryCronJob.start();
+log.info(`Cron: Next queryCronJob: ${queryCronJob?.nextDate().toISO()}`);
+
+(targetSearchCronJob) &&
+  targetSearchCronJob.start();
+log.info(`Cron: Next targetSearchCronJob: ${targetSearchCronJob?.nextDate().toISO()}`);
+
+(backupCronJob) &&
+  backupCronJob.start();
+log.info(`Cron: Next backupCronJob: ${backupCronJob?.nextDate().toISO()}`);
+

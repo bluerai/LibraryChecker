@@ -227,7 +227,7 @@ export async function findItemsToClear(monthAgo) {
 }
 
 
-export async function findEBooksToCheck(days = 22, kennungen = ['DÜS', 'THÜR', 'HESS', 'GOET']) {
+export async function findEBooksToCheck(days = 22, kennungen = ['DÜS', 'THÜR', 'HESS', 'GOET'], minUpdHours = 2) {
 
   // Berechne Cutoff-Datum
   const cutoffDate = new Date();
@@ -241,7 +241,7 @@ export async function findEBooksToCheck(days = 22, kennungen = ['DÜS', 'THÜR',
       kennung: { $in: kennungen },
       listType: 'watchlist',
       datum: { $lte: cutOffDateStr },
-      lastUpdated: { $lte: new Date(Date.now() - 60 * 60 * 1000) }      // finde nur items, die mehr als 1 Stunde nicht geändert wurden
+      lastUpdated: { $lte: new Date(Date.now() - minUpdHours * 60 * 60 * 1000) }      // finde nur items, die mehr als minUpdHours Stunde nicht geändert wurden
     }
   ).sort({ datum: 1, searchString: 1 }).toArray();
 
@@ -251,26 +251,44 @@ export async function findEBooksToCheck(days = 22, kennungen = ['DÜS', 'THÜR',
 export async function upsertItems(items) {
   let resultCounts = {};
 
+  let datumChangedCount = 0;
+
+  // Für jeden Item prüfen, ob sich 'datum' ändern würde
+  for (const item of items) {
+
+    const existingDoc = await DATA_COLL.findOne(
+      {
+        searchString: item.searchString,
+        kennung: item.kennung,
+        mediaType: item.mediaType
+      }
+    );
+
+    if ((existingDoc) && (existingDoc.datum) && (item.datum) && existingDoc.datum !== item.datum) {
+      datumChangedCount++;
+    }
+  }
+
+  log.debug(`upsertItems: datum wird in ${datumChangedCount} von ${items.length} Items geändert`);
+
+
+
   const bulkOps = items.map(item => {
+
+    let filter;
+    if (item.mediaId) {
+      filter = { mediaId: item.mediaId, kennung: item.kennung }
+
+    } else {
+      filter = { searchString: item.searchString, kennung: item.kennung, mediaType: item.mediaType }
+    }
+
     return {
       updateOne: {
-        filter: {
-          $or: [
-            {
-              mediaId: item.mediaId   // 1. Priorität: echte mediaId
-            },
-            {
-              searchString: item.searchString,    // 2. Fallback nur wenn KEINE gültige mediaId existiert
-              kennung: item.kennung,
-              mediaType: item.mediaType,
-              mediaId: { $in: [null, undefined] }
-            }
-          ]
-        },
+        filter: filter,
         update: {
           $set: {
             ...item,
-            datum: item.datum || null,
             lastUpdated: new Date()
           },
           $setOnInsert: {
@@ -286,14 +304,14 @@ export async function upsertItems(items) {
     try {
       resultCounts = await DATA_COLL.bulkWrite(bulkOps, { ordered: false });
 
-      log.debug('upsertItems: resultCounts:', JSON.stringify(resultCounts))
+      log.debug('bulkWrite: resultCounts:', JSON.stringify(resultCounts))
 
       // Fehler protokollieren
-      if (resultCounts.writeErrors > 0) {
+      if (resultCounts.writeErrors?.length > 0) {
         log.error('upsertItems: Fehler beim Bulk-Write:' + JSON.stringify(result.writeErrors));
       }
 
-      return { success: true, resultCounts };
+      return { success: true, resultCounts, datumChangedCount };
 
     } catch (error) {
       console.error(error);

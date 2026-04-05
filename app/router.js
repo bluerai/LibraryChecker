@@ -1,13 +1,13 @@
 import express from 'express';
-
+/* 
 import { checkerCronJob, fullCheckerCronJob, queryCronJob } from '../utils/cron.js';
 import { log } from '../utils/log.js';
-
+ */
 import {
   homeAction, listAction, jsonFileAction, importAction as importAction, updateItemAction as updateItemAction,
   bulkUpdateAction as bulkUpdateAction, markAsDoneAction, markAsReservedAction, resetAction, clearAction,
   deleteAction, itemAction, fullSearchAction, changeAction, upsertSearchItemAction, getWaitlistAction,
-  deleteSearchItemAction, updWaitListAction
+  deleteSearchItemAction, updWaitListAction, cronAction
 } from './controller.js';
 import upload from '../utils/uploadConfig.js';
 
@@ -28,6 +28,7 @@ router.post('/reset', resetAction);
 router.post('/clear', clearAction);
 router.post('/del', deleteAction);
 router.post('/search', fullSearchAction);
+router.post('/cron', cronAction);
 
 router.post('/waitlist/upsert', upsertSearchItemAction);
 router.post('/waitlist/del', deleteSearchItemAction);
@@ -36,7 +37,7 @@ router.post('/waitlist/upd', updWaitListAction);
 
 
 //cron-Jobs starten
-(checkerCronJob) && checkerCronJob.start();
+/* (checkerCronJob) && checkerCronJob.start();
 (fullCheckerCronJob) && fullCheckerCronJob.start();
 (queryCronJob) && queryCronJob.start();
 
@@ -48,6 +49,6 @@ if (log.isLevelEnabled('debug')) {
   } catch (error) {
     log.error(error)
   }
-}
+} */
 
 export default router;
