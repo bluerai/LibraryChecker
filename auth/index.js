@@ -5,7 +5,7 @@ import fs from 'fs-extra';
 import argon2 from 'argon2';
 import crypto from 'crypto';
 import { join } from 'path';
-import { log } from '../utils/log.js';
+import log from '../utils/log.js';
 
 const CHECKLIB_CONFIG = join(process.env.DATADIR, "config");
 fs.ensureDirSync(CHECKLIB_CONFIG, (error, exists) => {
@@ -17,7 +17,7 @@ const authfile = join(CHECKLIB_CONFIG, "jwt.json");
 try {
   if (fs.existsSync(authfile)) {
     JWT = fs.readJsonSync(authfile)
-    log("Authorisation by jwt token");
+    log.info("Authorisation by jwt token");
   } else {
     JWT.key = generateSecureRandomString(32);
     JWT.duration = "30d";
@@ -42,7 +42,7 @@ export function verifyAction(req, res) {
   if (!token || token === "null") {
     return res.render(join(import.meta.dirname, 'views', 'login'), { first_login: (!fs.existsSync(USERSFILE)) }, function (error, html) {
       if (error) { log.error(error); log.debug(error.stack); return }
-      log("/verify: No token");
+      log.warn("/verify: No token");
       res.status(401).json({ error: 'No token', html: html });
     })
   }
@@ -51,12 +51,12 @@ export function verifyAction(req, res) {
     if (err) {
       res.render(join(import.meta.dirname, 'views', 'login'), { first_login: (!fs.existsSync(USERSFILE)) }, function (error, html) {
         if (error) { log.error(error); log.debug(error.stack); return }
-        log("/verify: Invalid token");
+        log.warn("/verify: Invalid token");
         res.status(401).json({ error: 'Invalid token', html: html });
       })
 
     } else {
-      log("/verify: " + decoded.username + ", expire at: " + new Date(decoded.exp * 1000).toLocaleString());
+      log.debug("/verify: " + decoded.username + ", expire at: " + new Date(decoded.exp * 1000).toLocaleString());
       res.status(200).json({ message: 'Token is valid', user: decoded });
     }
   })
@@ -78,7 +78,7 @@ export function loginAction(req, res) {
       } else {
         users[username] = password;
         fs.writeJsonSync(USERSFILE, users);
-        log(`User ${username}: Password saved`);
+        log.debug(`User ${username}: Password saved`);
       }
     } catch (error) {
       log.error(error);
@@ -118,7 +118,7 @@ function savePasswordAsHash(username, password, users) {
     .then(hash => {
       users[username] = hash;
       fs.writeJsonSync(USERSFILE, users);
-      log(`User ${username}: Password hashed`);
+      log.debug(`User ${username}: Password hashed`);
       return true;
     })
 }

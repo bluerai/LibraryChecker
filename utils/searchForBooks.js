@@ -1,5 +1,5 @@
 import { findItemDone, findItemReserved } from '../app/model.js';
-import { log } from './log.js';
+import log  from './log.js';
 
 const cassisHost = process.env.CASSIS_HOST;
 const scraperHost = process.env.SCRAPER_HOST;
@@ -9,7 +9,7 @@ export function getToday() {
 }
 
 export async function checkCassis(item) {
-  //log.debug(`checkCassis: ${item.searchString}`)
+  log.debug(`checkCassis: ${item.searchString}`)
   const url = `http://${cassisHost}/api/count?search=${encodeURIComponent(item.searchString)}`;
 
   let result;
@@ -36,9 +36,11 @@ export async function checkCassis(item) {
 }
 
 export async function searchCassis(searchString) {
+  log.debug("searchCassis searchString=", searchString)
+
   searchString = searchString.split(' [')[0];
   const url = 'http://' + cassisHost + '/api/search?search=' + encodeURIComponent(searchString);
-  log(`searchCassis: url=${url}`);
+  log.debug(`searchCassis: url=${url}`);
 
   let result;
   try {
@@ -84,19 +86,14 @@ export async function searchCassis(searchString) {
 }
 
 export async function checkDone(searchString) {
-  //log.debug(`checkDone: ${searchString}`);
+  log.debug(`checkDone: ${searchString}`);
   return await findItemDone(searchString);
 }
 
 export async function checkReserved(kennung, searchString) {
-  //log.debug(`checkReserved: ${searchString}`);
+  log.debug(`checkReserved: ${searchString}`);
   return await findItemReserved(kennung, searchString);
 }
-
-/* export async function searchCheckLib(searchString) {
-  searchString = searchString.split(' [')[0];
-  return await findAllItems(searchString);
-} */
 
 // Normalisierung: Kleinbuchstaben, Sonderzeichen durch Leerzeichen ersetzen
 const whitespace_chars = /[\/\,\.\|\ \*\?\!\:\;\(\)\[\]\&\"\+\-\_\%]+/g;
@@ -136,16 +133,16 @@ export async function checkOnleihe(item0, limit = 1) {
   let url;
   if (['HESS', 'DÜS'].includes(item0.kennung))
     url = ((limit !== 1) || (['ePaper', 'eMagazine'].includes(item0.mediaType)) || !(item0.mediaData?.mediaId) || item0.mediaData.mediaId.length <= 12) ?
-      `http://${scraperHost}/search3` :
+      `http://${scraperHost}/search` :
       `http://${scraperHost}/details`;
+
 
   else if (['THÜR', 'GOET'].includes(item0.kennung))
     url = `http://${scraperHost}/search2`
 
   else return [];
 
-  log("checkOnleihe url:", url);
-  log({ item: item0, limit: limit });
+  log.debug("checkOnleihe url:", url);
 
   const res = await fetch(url, {
     method: "POST",
@@ -157,8 +154,8 @@ export async function checkOnleihe(item0, limit = 1) {
   if (data.error) throw new Error(data.error)
   if (data.length == 0) return data;
 
-  log('checkOnleihe: data.length=', data.length);
-  //log.debug('checkOnleihe: data=', data[0]);
+  log.debug('checkOnleihe: data.length=', data.length);
+  //log.debug('checkOnleihe: data=', data);
 
   let results = [];
 
@@ -218,17 +215,19 @@ export async function checkOnleihe(item0, limit = 1) {
     results.push({ status: "!", kennung: item0.kennung, searchString: item0.searchString, datum: "N/A", mediaType: item0.mediaType });
  */
 
+  log.debug(results);
+
   return results;
 
 }
 
 export async function queryOnleihe(kennung, limit) {
-  log(`queryOnleihe: kennung=${kennung}, limit=${limit}`);
+  log.debug(`queryOnleihe: kennung=${kennung}, limit=${limit}`);
 
   let url;
 
   if (['HESS', 'DÜS'].includes(kennung))
-    url = `http://${scraperHost}/list3/${encodeURIComponent(kennung)}/${limit}`;
+    url = `http://${scraperHost}/querydata/${encodeURIComponent(kennung)}/${limit}`;
 
   else if (['THÜR', 'GOET'].includes(kennung))
     url = `http://${scraperHost}/list2/${encodeURIComponent(kennung)}/${limit}`;
@@ -253,7 +252,7 @@ export async function queryOnleihe(kennung, limit) {
 
 
 export async function processImportedData(kennung, data) {
-  //log.debug(`processImportedData kennung:`, kennung, 'dataLength:', data.length)
+  log.debug(`processImportedData kennung:`, kennung, 'dataLength:', data.length)
   const today = getToday();
 
   const results = [];
@@ -271,6 +270,9 @@ export async function processImportedData(kennung, data) {
     const mediaId = card.mediaId;
     const author = card.author;
     const title = card.title;
+    const isAvailable = card.isAvailable;
+    const received = card.received;
+    const mediaRef = card.mediaRef;
 
     let searchString = `${(author) ? author + "; " : ""}${title}`;
     let status = "?";
@@ -297,12 +299,13 @@ export async function processImportedData(kennung, data) {
           listType = 'donelist';
           donelistCount++
         } else {
-          if (datum === "") {
-            status = "*";
+          if (isAvailable) {
+            status = "*";  // ausleihbar und jetzt verfügbar
             datum = today;
             availableCount++;
           } else {
-            status = "=";
+            if (!datum || datum === "") status = "+"    //fehlerhaft: nicht verfügbar, aber kein Datum 
+            else status = "=";    // ausleihbar, jetzt aber nicht verfügbar
             watchListCount++
           }
           listType = 'watchlist';
@@ -314,7 +317,8 @@ export async function processImportedData(kennung, data) {
       author: author,
       title,
       kennung,
-      mediaId
+      mediaId,
+      mediaRef
     }
 
     const result = {
@@ -324,10 +328,11 @@ export async function processImportedData(kennung, data) {
       searchString,
       mediaType,
       mediaData,
-      listType
+      listType,
+      received
     };
 
-    if (mediaData.mediaId && mediaData.mediaId.length > 12) 
+    if (mediaData.mediaId && mediaData.mediaId.length > 12)
       result.mediaId = mediaData.mediaId;
 
     // nur sichern, wenn nicht in Cassis und nicht in "Erledigt"

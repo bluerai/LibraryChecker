@@ -160,36 +160,7 @@ html(lang="de")
                 script.
                   jsonImportEventListener()
                               
-              .card.mb-2#bulkUpdate
-                .card-header(onClick="toggleCardBody(this)")
-                  h5.mb-0 E-Book-Daten aktualisieren
-                    i.bi.bi-caret-down-fill.text-primary
-
-                .card-body(style="display: none")
-                  .row.d-flex.align-items-center
-                    .col-6
-                        label.form-label.center(for="daysInput") Tage: 
-                          input#daysInput.form-control.d-inline-block.center(type="number" min="1" value="7" style="width: 88px")
-                        p Nur Daten aktualisieren, die nicht in der letzten Stunde geändert wurden.  
-    
-                    .col-6.text-end
-                      button.btn.btn-primary(onclick="bulkUpdate()") Jetzt starten
-                        
-                .card-footer.statusmsg.text-primary(style="display: none")
-
-              //-.card.mb-2#convertData
-                .card-header(onClick="toggleCardBody(this)")
-                  h5.mb-0.text-start Daten für Version 3 konvertieren 
-                    i.bi.bi-caret-down-fill.text-primary
-
-                .card-body(style="display: none")                  
-                  .center
-                    button.btn.btn-primary(onclick="convertData()") Konvertierung starten
-
-                .card-footer.statusmsg.text-primary(style="display: none")
-
-
-              .card.mb-2#importQueryData
+              .card.mb-2#importData
                 .card-header(onClick="toggleCardBody(this)")
                   h5.mb-0.text-start Daten online abfragen 
                     i.bi.bi-caret-down-fill.text-primary
@@ -209,44 +180,45 @@ html(lang="de")
                         input.btn-check(type="radio" name="kennung" value="THÜR" id="thur" autocomplete="off")
                         label.btn.btn-outline-primary(for="thur") THÜR
 
-                  //-.row.d-flex.align-items-center.mb-4
+                  .row.d-flex.align-items-center.mb-4
                     .col-6         
                       label.form-label(for="count") Anzahl zu ladener Datensätze (in Reihenfolge der Neuzugänge):
                     .col-6         
                       .btn-group(role="group")
-                        each val in [40, 80, 100, 200, 300]
+                        each val in [60, 100, 200, 300]
                           input.btn-check(type="radio" name="limit" value=val id=`limit${val}`)
                           label.btn.btn-outline-primary(for=`limit${val}`)= val
                   
                   .text-end
-                    button.btn.btn-primary(onclick="importQueryData()") Abfrage starten
+                    button.btn.btn-primary(onclick="importData()") Abfrage starten
 
                 .card-footer.statusmsg.text-primary(style="display: none")
 
-              .card.mb-2#cronJobs
+              .card.mb-2#bulkUpdate
                 .card-header(onClick="toggleCardBody(this)")
+                  h5.mb-0 E-Book-Daten aktualisieren
+                    i.bi.bi-caret-down-fill.text-primary
+
+                .card-body(style="display: none")
+                  .row.d-flex.align-items-center
+                    .col-6
+                        label.form-label.center(for="daysInput") Tage: 
+                          input#daysInput.form-control.d-inline-block.center(type="number" min="1" value="7" style="width: 88px")
+                        p Nur Daten aktualisieren, die nicht in den letzten 2 Stunden geändert wurden.  
+    
+                    .col-6.text-end
+                      button.btn.btn-primary(onclick="bulkUpdate()") Jetzt starten
+                        
+                .card-footer.statusmsg.text-primary(style="display: none")
+
+              .card.mb-2#cronJobs
+                .card-header(onClick="toggleCardBody(this, 'CronJobs')")
                   h5.mb-0 Cron-Jobs
                     i.bi.bi-caret-down-fill.text-primary 
 
                 .card-body(style="display: none")
                   .row.align-items-center
-                    .col-12#cron_table
-                      table(border="1", cellpadding="8", cellspacing="0", style="border-collapse: collapse;")
-                        thead
-                          tr
-                            th Job Name
-                            th Next Execution Time
-                            th Pattern
-                        tbody
-                          each job in cronJobs
-                            if job
-                              tr
-                                td= job.context
-                                td= job.nextDate().toISO().split('.')[0].replace('T', ', ')
-                                td= job.cronTime
-                  .row.align-items-center
-                    .col-12.text-end
-                      button.btn.btn-primary(onclick="getCronJobs()") Aktualisieren                                
+                    .col-12#cron_table                            
 
               .card-footer.statusmsg.text-primary(style="display: none")
 
@@ -389,6 +361,7 @@ html(lang="de")
 
         
       .modal-footer
-        button.btn.btn-outline-secondary(type="button" data-bs-dismiss="modal") Schließen
+        button#textSearchReset.btn.btn-outline-secondary(type="button") Reset
+        button.btn.btn-outline-secondary(type="button" data-bs-dismiss="modal") Abbrechen
         button#textSearchButton.btn.btn-primary(type="button") Filtern
 

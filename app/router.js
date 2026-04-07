@@ -1,8 +1,5 @@
 import express from 'express';
-/* 
-import { checkerCronJob, fullCheckerCronJob, queryCronJob } from '../utils/cron.js';
-import { log } from '../utils/log.js';
- */
+
 import {
   homeAction, listAction, jsonFileAction, importAction as importAction, updateItemAction as updateItemAction,
   bulkUpdateAction as bulkUpdateAction, markAsDoneAction, markAsReservedAction, resetAction, clearAction,
@@ -13,6 +10,7 @@ import upload from '../utils/uploadConfig.js';
 
 
 const router = express.Router();
+export default router;
 
 router.get('/', homeAction);
 router.get('/list', listAction);
@@ -50,5 +48,3 @@ if (log.isLevelEnabled('debug')) {
     log.error(error)
   }
 } */
-
-export default router;

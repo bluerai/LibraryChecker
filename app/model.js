@@ -1,5 +1,5 @@
 import { MongoClient, ObjectId } from 'mongodb';
-import { log } from '../utils/log.js';
+import log from '../utils/log.js';
 
 const mongoUrl = process.env.CHECKLIBDB_URL || 'mongodb://localhost:27017';
 const dbName = process.env.CHECKLIBDB_NAME || 'library_info';
@@ -22,12 +22,12 @@ export async function connect() {
   SEARCH_COLL = DB.collection(searchItemsCollName);
   await SEARCH_COLL.createIndex({ searchString: 1 });
 
-  log(`Database connected: url=${mongoUrl}`);
+  log.info(`Database connected: url=${mongoUrl}`);
 }
 
 export async function disconnect() {  //not used
   await DBCLIENT.close();
-  log('Database disconnected.');
+  log.info('Database disconnected.');
 }
 
 export async function getItem(itemId) {
@@ -140,7 +140,7 @@ export async function changeItem(itemId, newSearchString, newPrio, newDatum) {
 
 
 export async function updateItemById(item, upsert = false) {
-  log("updateItemById: ", item.kennung, item.searchString);
+  log.debug("updateItemById: ", item.kennung, item.searchString);
   const itemId = item._id;
   const { _id, ...updateData } = item; //  _id entfernen
   const result = await DATA_COLL.findOneAndUpdate(

@@ -204,7 +204,10 @@ function loadSearchModal() {
   const searchModalElement = document.getElementById('searchModal');
   const searchModal = new bootstrap.Modal(searchModalElement);
   const textSearchButton = document.getElementById('textSearchButton');
+  const textSearchReset = document.getElementById('textSearchReset');
+
   const searchInput = document.getElementById('searchInput');
+  const reservInput = document.getElementById('reservInput');
   const prioInput = document.getElementById('prioInput');
 
   searchModalElement.addEventListener('shown.bs.modal', () => {
@@ -213,6 +216,8 @@ function loadSearchModal() {
 
   // Suche ausführen
   textSearchButton.addEventListener('click', launchFilterTable);
+  // Reset ausführen
+  textSearchReset.addEventListener('click', resetFilterOptions);
 
   searchInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
@@ -227,6 +232,12 @@ function loadSearchModal() {
 
     filterTable(FILTER_TEXT, FILTER_PRIO, FILTER_RESERV);
     searchModal.hide();
+  }
+
+  function resetFilterOptions() {
+    searchInput.value = "";
+    prioInput.checked = false;
+    reservInput.checked = false;
   }
 }
 
@@ -468,7 +479,7 @@ async function setItemDone(itemId, targetId, event) {
       if (result.ok) {
         if (targetId && document.getElementById(targetId)) {
           if (targetId.startsWith('item_')) {
-            RELOAD_NEEDED = true;
+            reloadList()
           } else if (targetId.startsWith('result_')) {
             document.getElementById(targetId).outerHTML = data.html;
           }
@@ -695,23 +706,29 @@ async function convertData() {
   }
 }
 
-async function importQueryData() {
+async function importData() {
   try {
-    const statusmsg = document.querySelector('#importQueryData  .statusmsg');
-    statusmsg.style.display = 'block';
-    insertTextWithSpinner(statusmsg, "Online-Abfrage gestartet ... ");
-
     let kennung;
     document.querySelectorAll('input[name="kennung"]').forEach(radio => {
       if (radio.checked) kennung = radio.value
     })
+    if (!kennung) return showToast('Online-Abfrage: Bitte Bibliothekl auswählen. ', 'warning');
 
-    if (!kennung) showToast('Online-Abfrage: Bitte Bibliothekl auswählen. ', 'warning');
+    let limit;
+    document.querySelectorAll('input[name="limit"]').forEach(radio => {
+      if (radio.checked) limit = radio.value
+    })
+    if (!limit) return showToast('Online-Abfrage: Bitte Anzahl von Datensätzen auswählen. ', 'warning');
+
     const result = await fetch('/import', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
-      body: JSON.stringify({ kennung })
+      body: JSON.stringify({ kennung, limit })
     });
+
+    const statusmsg = document.querySelector('#importData .statusmsg');
+    statusmsg.style.display = 'block';
+    insertTextWithSpinner(statusmsg, "Online-Abfrage gestartet ... ");
 
     const data = await result.json();
 
@@ -722,11 +739,11 @@ async function importQueryData() {
     } else {
       statusmsg.textContent = "";
       statusmsg.style.display = 'none';
-      showToast('importQueryData: ' + data.error, 'warning');
+      showToast('importData: ' + data.error, 'warning');
     }
 
   } catch (error) {
-    showToast(statusText.textContent = 'importQueryData: ' + error.message, 'warning');
+    showToast(statusText.textContent = 'importData: ' + error.message, 'warning');
   }
 }
 
@@ -743,12 +760,10 @@ async function getCronJobs() {
 
     if (result.ok) {
       document.getElementById('cron_table').innerHTML = data.html;
-    } else {
-      document.getElementById('cron_table').innerHTML = 'Keine Cron-Jobs definiert.';
     }
 
   } catch (error) {
-    showToast(statusText.textContent = 'importQueryData: ' + error.message, 'warning');
+    showToast(statusText.textContent = 'importData: ' + error.message, 'warning');
   }
 }
 
@@ -1135,11 +1150,12 @@ function openAdminBackups() {
   body.style.display = (body.style.display == 'none') ? "block" : "none"
 }
 
-function toggleCardBody(element) {
+function toggleCardBody(element, func) {
   const cardBody = element.nextSibling;
   cardBody.style.display = (cardBody.style.display == 'none') ? "block" : "none"
   const cardFooter = cardBody.nextSibling;
   if (cardFooter) cardFooter.style.display = 'none';
+  if (func === "CronJobs" && cardBody.style.display === "block") getCronJobs();
 }
 
 async function loadBackups() {  //Backup Laden beim öffnen

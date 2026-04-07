@@ -7,9 +7,8 @@ import os from 'os';
 import * as model from './app/model.js';
 import router from './app/router.js';
 import backupRouter from './backup/router.js';
-import { log } from './utils/log.js';
+import log from './utils/log.js';
 import { verifyAction, loginAction, protect } from './auth/index.js';
-import { cronJobs, checkerCronJob, fullCheckerCronJob, queryCronJob, targetSearchCronJob, backupCronJob } from './utils/cron.js';
 
 const app = express();
 

@@ -1,8 +1,7 @@
 import express from 'express';
-import { BackupController } from './controller.js';
 import path from 'path';
 import fs from 'fs';
-import { log } from '../utils/log.js';
+import log from '../utils/log.js';
 
 import { BackupService } from './model.js';
 
@@ -62,7 +61,7 @@ router.delete('/:filename', async (req, res) => {
   try {
     fs.unlink(path.join(backupDir, req.params.filename), (error) => {
       if (!error) res.json({ success: true });
-    } );
+    });
   } catch (error) {
     log.error("error: ", error);
     res.status(500).json({

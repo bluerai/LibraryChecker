@@ -1,4 +1,4 @@
-FROM node:23.5-alpine3.20
+FROM node:lts-alpine3.22
 RUN apk add tzdata
 RUN apk add curl
 

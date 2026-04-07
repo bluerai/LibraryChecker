@@ -62,14 +62,17 @@ levels.forEach(level => {
   };
 });
 
-export function log(...args) {
-  logger.info(...args);  // Standardmäßig info-Level
-}
+export default function log(...args) {   logger.info(...args); }
 log.info = (...args) => logger.info(...args);
 log.warn = (...args) => logger.warn(...args);
 log.error = (...args) => logger.error(...args);
 log.debug = (...args) => logger.debug(...args);
-log.silly = (...args) => logger.silly(...args);
+log.silly = (...args) => logger.silly(...args);/* 
+export function info(...args) { logger.info(...args); }
+export function warn(...args) { logger.warn(...args); }
+export function error(...args) { logger.error(...args); }
+export function debug(...args) { logger.debug(...args); }
+export function silly(...args) { logger.silly(...args); } */
 
 log.isLevelEnabled = (...args) => logger.isLevelEnabled(...args);
 
