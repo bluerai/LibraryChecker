@@ -60,12 +60,12 @@ html(lang="de")
                       h5.mb-0 Online-Suche
 
                     .col-4.text-end.p-0                 
-                        button.btn.btn-sm.btn-outline-secondary.ms-2(title="neue Suche" onclick="newSearchTab()")
-                          i.bi.bi-arrow-counterclockwise(style="font-size: 18px")
+                      button.btn.btn-sm.btn-outline-secondary.ms-2(title="neue Suche" onclick="newSearchTab()")
+                        i.bi.bi-arrow-counterclockwise(style="font-size: 18px")
 
                 .card-body
                   .form#newEntryForm 
-                    
+
                     .row.d-flex.align-items-center.mb-2
                       .col-3
                         label.form-label(for="mediaType") Mediatype:
@@ -101,7 +101,7 @@ html(lang="de")
                     .row
                       .col-12
                         textarea#fullSearchString.mb-2.form-control.border-primary(rows="2" placeholder="Suchstring eingeben..." required)
-                          
+
                     .row.align-items-center
                       .col-2
 
@@ -117,11 +117,11 @@ html(lang="de")
                       label.form-label.me-2(for="targetDate") Starttermin der Abfrage:
                     .col-6
                       input#targetDate.form-control.border.border-primary.text-center(type="date")
-                    
+
                   .row.mt-4
                     .col12.d-flex.justify-content-center   
                       button.btn.btn-sm.btn-primary(title="Speichern" onclick="saveSearchItem()" style="width: 200px") Abfrage speichern
-                                      
+
             #results-container
 
           #serviceTab.tab-content.mb-2(style="display: none;")   
@@ -150,8 +150,8 @@ html(lang="de")
                           label.btn.btn-outline-primary(for="thur1") THÜR
 
                     .mb-3
-                        label.form-label(for="jsonListFile") Importdatei (.json)
-                        input.form-control(type="file" name="jsonListFile" id="jsonlistFile" accept=".json" required)
+                      label.form-label(for="jsonListFile") Importdatei (.json)
+                      input.form-control(type="file" name="jsonListFile" id="jsonlistFile" accept=".json" required)
 
                     .text-end
                       button.btn.btn-primary(type="submit") Datei hochladen
@@ -159,7 +159,7 @@ html(lang="de")
                   .card-footer.mb-2.statusmsg.text-primary(style="display: none")
                 script.
                   jsonImportEventListener()
-                              
+
               .card.mb-2#importData
                 .card-header(onClick="toggleCardBody(this)")
                   h5.mb-0.text-start Daten online abfragen 
@@ -188,7 +188,7 @@ html(lang="de")
                         each val in [60, 100, 200, 300]
                           input.btn-check(type="radio" name="limit" value=val id=`limit${val}`)
                           label.btn.btn-outline-primary(for=`limit${val}`)= val
-                  
+
                   .text-end
                     button.btn.btn-primary(onclick="importData()") Abfrage starten
 
@@ -202,13 +202,13 @@ html(lang="de")
                 .card-body(style="display: none")
                   .row.d-flex.align-items-center
                     .col-6
-                        label.form-label.center(for="daysInput") Tage: 
-                          input#daysInput.form-control.d-inline-block.center(type="number" min="1" value="7" style="width: 88px")
-                        p Nur Daten aktualisieren, die nicht in den letzten 2 Stunden geändert wurden.  
-    
+                      label.form-label.center(for="daysInput") Tage: 
+                        input#daysInput.form-control.d-inline-block.center(type="number" min="1" value="7" style="width: 88px")
+                      p Nur Daten aktualisieren, die nicht in den letzten 2 Stunden geändert wurden.  
+
                     .col-6.text-end
                       button.btn.btn-primary(onclick="bulkUpdate()") Jetzt starten
-                        
+
                 .card-footer.statusmsg.text-primary(style="display: none")
 
               .card.mb-2#cronJobs
@@ -313,7 +313,7 @@ html(lang="de")
 
             .dropdown
               a#donelist.btn.btn-outline-primary.dropdown-toggle.px-1(
-                  data-bs-toggle="dropdown" style="font-size: 14px"
+                data-bs-toggle="dropdown" style="font-size: 14px"
               ) Erledigt
               .dropdown-menu.p-0(style="min-width: unset")
                 .btn-group-vertical.w-100
@@ -350,18 +350,37 @@ html(lang="de")
         .mb-3
           label.form-label(for="searchInput") Filtertext:
           input#searchInput.border.form-control(type="text" placeholder="Text eingeben...")
-        
         .d-flex.justify-content-start.align-items-center.mb-3
-            .form-check.form-switch.d-flex.align-items-center
-              label.form-check-label.mb-0.me-5(for="reservInput") Nur vorgemerkte Titel:
-              input#reservInput.form-check-input(type="checkbox" role="switch")
-            .form-check.form-switch.d-flex.align-items-center
-              label.form-check-label.mb-0.me-5(for="prioInput") Nur Titel mit Priorität:
-              input#prioInput.form-check-input(type="checkbox" role="switch")
-
-        
+          .form-check.form-switch.d-flex.align-items-center
+            label.form-check-label.mb-0.me-5(for="reservInput") Nur vorgemerkte Titel:
+            input#reservInput.form-check-input(type="checkbox" role="switch")
+          .form-check.form-switch.d-flex.align-items-center
+            label.form-check-label.mb-0.me-5(for="prioInput") Nur Titel mit Priorität:
+            input#prioInput.form-check-input(type="checkbox" role="switch")
       .modal-footer
         button#textSearchReset.btn.btn-outline-secondary(type="button") Reset
         button.btn.btn-outline-secondary(type="button" data-bs-dismiss="modal") Abbrechen
         button#textSearchButton.btn.btn-primary(type="button") Filtern
 
+#cronModal.modal(tabindex="-1")
+  .modal-dialog.modal-dialog-centered
+    .modal-content
+      .modal-header.bg-primary.text-white
+        h5.modal-title Optionen für 
+          span#jobName
+          span#jobIndex(style="display: none")
+        button.btn-close.btn-close-white(type="button" data-bs-dismiss="modal" aria-label="Close")
+      .modal-body
+        .mb-3
+          label.form-label(for="cronTimeInput") CronTime-Pattern:
+          input#cronTimeInput.border.form-control(type="text" placeholder="Cron-Pattern eingeben...")
+        .d-flex.justify-content-start.align-items-center.mb-3          
+          .form-check.form-switch.d-flex.align-items-center
+            label.form-check-label.mb-0.me-5(for="autoStartCheckBox") Autostart:
+            input#autoStartCheckBox.form-check-input(type="checkbox" role="switch")
+
+      .modal-footer 
+        button#jobPause.btn.btn-primary(type="button") Pausieren
+        button#jobStart.btn.btn-primary(type="button") Starten
+        button#jobSave.btn.btn-success(type="button") Speichern
+        button.btn.btn-outline-secondary(type="button" data-bs-dismiss="modal") Abbrechen

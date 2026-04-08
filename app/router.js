@@ -4,7 +4,7 @@ import {
   homeAction, listAction, jsonFileAction, importAction as importAction, updateItemAction as updateItemAction,
   bulkUpdateAction as bulkUpdateAction, markAsDoneAction, markAsReservedAction, resetAction, clearAction,
   deleteAction, itemAction, fullSearchAction, changeAction, upsertSearchItemAction, getWaitlistAction,
-  deleteSearchItemAction, updWaitListAction, cronAction
+  deleteSearchItemAction, updWaitListAction, cronAction, cronJobsAction
 } from './controller.js';
 import upload from '../utils/uploadConfig.js';
 
@@ -26,7 +26,8 @@ router.post('/reset', resetAction);
 router.post('/clear', clearAction);
 router.post('/del', deleteAction);
 router.post('/search', fullSearchAction);
-router.post('/cron', cronAction);
+router.post('/cron/jobs', cronJobsAction);
+router.post('/cron/:action', cronAction);
 
 router.post('/waitlist/upsert', upsertSearchItemAction);
 router.post('/waitlist/del', deleteSearchItemAction);

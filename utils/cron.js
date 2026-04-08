@@ -1,15 +1,36 @@
 'use strict'
 
 import { CronJob } from 'cron';
-
 import { pushover } from './pushover.js';
-import log from './log.js';
+import { join } from 'path';
+import fs from 'fs-extra';
 
+import log from './log.js';
 import { findEBooksToCheck } from '../app/model.js';
 import { bulkUpdate, updateSearchItems, importData } from '../app/controller.js';
 import { findSearchItems } from '../app/model.js';
 import { BackupService } from '../backup/model.js';
 import { getToday } from './searchForBooks.js';
+
+let cronTab = readCronTab();
+
+function readCronTab() {
+  let cronFile = join(process.env.DATADIR, "config", "cron.json");
+  if (fs.existsSync(cronFile))
+    return fs.readJsonSync(cronFile);
+  else
+    return [];
+}
+
+export function writeToCronTab(jobName, cronTime, autoStart) {
+  cronTab[jobName] = { cronTime, autoStart };
+  let cronFile = join(process.env.DATADIR, "config", "cron.json");
+  fs.writeJsonSync(cronFile, cronTab)
+}
+
+export function getAutoStart(jobName) {
+  return cronTab[jobName].autoStart;
+}
 
 const queryTargets = [
   { kennung: 'THÜR', limit: process.env.QUERYLIMIT_THUER || 240 },
@@ -19,74 +40,67 @@ const queryTargets = [
 ];
 
 //--- Cron Jobs --------
+export const cronJobs = new Map();
 
-export const checkerCronJob =
+cronJobs.set(
+  "checker",
   new CronJob(
-    process.env.CRON_CHECKER || "0 0 1 1 0", // cronTime
+    cronTab.checker?.cronTime || "0 0 1 1 0", // cronTime
     checkerJob22, // onTick
     null, // onComplete
-    false, // automatisch starten
+    cronTab.checker?.autoStart || false, // automatisch starten
     process.env.TZ || "Europe/Berlin", // timeZone
-    "checkerCronJob"
-  );
-if (process.env.CRON_CHECKER) checkerCronJob.start();
-if (checkerCronJob.isActive) log.info(`Cron: Next checkerCronJob: ${checkerCronJob?.nextDate().toISO()}`);
+    "Checker 22"
+  ))
 
-
-export const fullCheckerCronJob =
+cronJobs.set(
+  "fullChecker",
   new CronJob(
-    process.env.CRON_FULLCHECKER || "0 0 1 1 0", // cronTime
+    cronTab.fullChecker?.cronTime || "0 0 1 1 0", // cronTime
     checkerJob999, // onTick
     null, // onComplete
-    false, // automatisch starten
+    cronTab.fullChecker?.autoStart || false, // automatisch starten
     process.env.TZ || "Europe/Berlin", // timeZone
-    "fullCheckerCronJob"
-  );
-if (process.env.CRON_FULLCHECKER) fullCheckerCronJob.start();
-if (fullCheckerCronJob.isActive) log.info(`Cron: Next fullCheckerCronJob: ${fullCheckerCronJob?.nextDate().toISO()}`);
+    "Checker 999"
+  ))
 
-
-export const queryCronJob =
+cronJobs.set(
+  "query",
   new CronJob(
-    process.env.CRON_QUERY || "0 0 1 1 0", // cronTime
+    cronTab.query?.cronTime || "0 0 1 1 0", // cronTime
     queryJob, // onTick
     null, // onComplete
-    false, // automatisch starten
+    cronTab.query?.autoStart || false, // automatisch starten
     process.env.TZ || "Europe/Berlin", // timeZone
-    "queryCronJob"
-  );
-if (process.env.CRON_QUERY) queryCronJob.start();
-if (queryCronJob.isActive) log.info(`Cron: Next checkerCronJob: ${queryCronJob?.nextDate().toISO()}`);
+    "Query"
+  ))
 
-
-export const backupCronJob =
+cronJobs.set(
+  "backup",
   new CronJob(
-    process.env.CRON_BACKUP || "0 0 1 1 0", // cronTime
+    cronTab.backup?.cronTime || "0 0 1 1 0", // cronTime
     backupJob, // onTick
     null, // onComplete
-    false, // automatisch starten
+    cronTab.backup?.autoStart || false, // automatisch starten
     process.env.TZ || "Europe/Berlin", // timeZone
-    "backupCronJob"
-  );
-if (process.env.CRON_BACKUP) backupCronJob.start();
-if (backupCronJob.isActive) log.info(`Cron: Next backupCronJob: ${backupCronJob?.nextDate().toISO()}`);
+    "Backup"
+  ))
 
-
-export const targetSearchCronJob =
+cronJobs.set(
+  "targetSearch",
   new CronJob(
-    process.env.CRON_TARGETSEARCH || "0 0 1 1 0", // cronTime
+    cronTab.targetSearch?.cronTime || "0 0 1 1 0", // cronTime
     targetSearchJob, // onTick
     null, // onComplete
-    false, // automatisch starten
+    cronTab.targetSearch?.autoStart || false, // automatisch starten
     process.env.TZ || "Europe/Berlin", // timeZone
-    "targetSearchCronJob"
-  );
-if (process.env.CRON_TARGETSEARCH) targetSearchCronJob.start();
-if (targetSearchCronJob.isActive) log.info(`Cron: Next targetSearchCronJob: ${targetSearchCronJob?.nextDate().toISO()}`);
+    "Target search"
+  ))
 
-export const cronJobs = [
-  queryCronJob, checkerCronJob, fullCheckerCronJob, targetSearchCronJob, backupCronJob
-];
+
+cronJobs.values().forEach(j => {
+  if (j.isActive) log.info(`Cron: Next ${j.context} job: ${j?.nextDate().toISO()}`);
+});
 
 // -- functions called by cron
 
@@ -129,10 +143,10 @@ async function queryJob() {
       try {
         const result = await importData(target.kennung, target.limit);
 
-        log.debug('Cron: queryJob:',  target.kennung, result.message);
+        log.debug('Cron: queryJob:', target.kennung, result.message);
 
         if (result.success) {
-          if (result.avaiable !== 0)
+          if (result.avaliable !== 0)
             pushover.sysinfo(result.success, `Online-Abfrage ${target.kennung}`);
           else
             pushover.sysnote(result.success, `Online-Abfrage ${target.kennung}`);

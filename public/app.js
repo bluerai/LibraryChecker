@@ -9,6 +9,8 @@ let TARGET_ID;
 
 let TOKEN = localStorage.getItem('token');
 
+let cronModal;
+
 // login ===================================================================
 
 async function validate() {
@@ -750,7 +752,7 @@ async function importData() {
 async function getCronJobs() {
   try {
 
-    const result = await fetch('/cron', {
+    const result = await fetch('/cron/jobs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
       body: JSON.stringify({})
@@ -763,8 +765,80 @@ async function getCronJobs() {
     }
 
   } catch (error) {
-    showToast(statusText.textContent = 'importData: ' + error.message, 'warning');
+    showToast(statusText.textContent = 'getCronJobs: ' + error.message, 'warning');
   }
+}
+
+function loadCronModal() {
+  const cronModalElement = document.getElementById('cronModal');
+  cronModal = new bootstrap.Modal(cronModalElement);
+
+  const jobPauseButton = document.getElementById('jobPause');
+  const jobStartButton = document.getElementById('jobStart');
+  const jobSaveButton = document.getElementById('jobSave');
+
+  jobPauseButton.addEventListener('click', pauseCronJob);
+  jobStartButton.addEventListener('click', startCronJob);
+  jobSaveButton.addEventListener('click', saveCronJob);
+
+  const jobNameSpan = document.getElementById('jobName');
+  const cronTimeInput = document.getElementById('cronTimeInput');
+  const autoStartCheckBox = document.getElementById('autoStartCheckBox');
+
+
+  function pauseCronJob() {
+    manageCronJob("pause", jobNameSpan.textContent);
+    getCronJobs();
+    cronModal.hide();
+  }
+
+  function startCronJob() {
+    manageCronJob("start", jobNameSpan.textContent);
+    getCronJobs();
+    cronModal.hide();
+  }
+
+  function saveCronJob() {
+    manageCronJob("save", jobNameSpan.textContent, cronTimeInput.value, autoStartCheckBox.checked);
+    getCronJobs();
+    cronModal.hide();
+  }
+
+  async function manageCronJob(action, jobName, cronTimeString, autoStart) {
+
+    try {
+
+      const result = await fetch(`/cron/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
+        body: JSON.stringify({ jobName, cronTimeString, autoStart })
+      });
+
+      const data = await result.json();
+
+      if (result.ok)
+        showToast(data.success, 'info');
+      else
+        showToast(data.error, 'warning');
+
+    } catch (error) {
+      showToast(`manageCronJob ${action}: Fehler: ${error.message}`, 'warning');
+    }
+
+  }
+
+}
+
+function openCronModal(jobName, jobCronTime, autoStart) {
+  // Modal-Elemente
+  if (!cronModal) loadCronModal();
+
+  document.getElementById('jobName').textContent = jobName; 
+  document.getElementById('cronTimeInput').value = jobCronTime;
+  document.getElementById('autoStartCheckBox').checked = autoStart;
+
+  cronModal.show();
+  cronTimeInput.focus();
 }
 
 //**************** File Upload

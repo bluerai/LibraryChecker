@@ -1,6 +1,7 @@
+import { CronTime, validateCronExpression } from 'cron';
 import { join } from 'path';
 import { pushover } from '../utils/pushover.js';
-import { cronJobs } from '../utils/cron.js';
+import { cronJobs, writeToCronTab, getAutoStart } from '../utils/cron.js';
 
 import {
   getItem, findItemId, findItem, findEBooksToCheck, findItemsToClear, findSiblings, changeItem,
@@ -500,10 +501,12 @@ export async function bulkUpdate(items, minWait) {   //minWait in sec zwischen d
       }
 
     } catch (err) {
-      const message = `bulkUpdate: Fehler bei: "${item.kennung}" "${item.searchString}":`
+      const message = `bulkUpdate: Fehler bei: "${item?.kennung}" "${item?.searchString}" "${item?.mediaId}" :`
       log.error(message, err);
+      log.error(item);
       pushover.syswarn(message, "Library Checker");
-      return { error: message };
+      //return { error: message };
+      //weiter mit nächstem Item
     }
   }
 
@@ -674,24 +677,71 @@ export async function itemAction(req, res) {
   }
 }
 
-export async function cronAction(req, res) {
+export async function cronJobsAction(req, res) {
   try {
-    
-    log.info(`cronAction`);
+    const sortedJobs = new Map(
+      [...cronJobs.entries()].sort((a, b) => a[1].nextDate() - b[1].nextDate()).sort((a, b) => b[1].isActive - a[1].isActive)
+    )
 
-    let html = `<div class="table-responsive"><table class="table table-hover">
-    <thead><tr><th>Job Name</th><th>Next Execution Time</th><th>Pattern</th></tr></thead>
-    <tbody>`
-    cronJobs.sort((a, b) => a.nextDate() - b.nextDate()).sort((a, b) => b.isActive - a.isActive)
-    .forEach((job) => {
+    let html = `<div class="table-responsive"><table class="table table-hover"><thead><tr><th>Job</th><th>Nächste Ausführung</th><th>Zeitmuster</th></tr></thead><tbody>`
+    sortedJobs.forEach((job, name) => {
+      html += `<tr onClick="openCronModal('${name}','${job.cronTime}', ${getAutoStart(name)})"><td>${job.context}</td>`
       if (job.isActive)
-        html += `<tr><td>${job.context}</td><td>${job.nextDate().toISO().split('.')[0].replace('T', ', ')}</td><td>${job.cronTime}</td><tr>`
-        else
-        html += `<tr><td>${job.context}</td><td>---</td><td>---</td><tr>`
+        html += `<td>${job.nextDate().toISO().split('.')[0].replace('T', ', ')}</td><td>${job.cronTime}</td><td>${getAutoStart(name)}</td><tr>`
+      else
+        html += `<td>---</td><td>---</td><td>${getAutoStart(name)}</td><tr>`
     })
     html += `</tbody></table></div>`
 
     res.json({ html });
+
+  } catch (err) {
+    errorHandler(err, 'cronAction', res);
+  }
+}
+
+export async function cronAction(req, res) {
+  try {
+    log(req.params, req.body);
+    const { jobName, cronTimeString, autoStart } = req.body;
+    const action = req.params.action;
+    log.info(`cronAction`, action, jobName, cronTimeString);
+
+    const job = cronJobs.get(jobName);
+
+
+    log("***", job.context, job.isActive, job.nextDate().toISO().split('.')[0].replace('T', ', '), autoStart)
+
+    let success = `Aktion "${action}" ist nicht definiert.`
+
+    switch (action) {
+      case 'start': {
+        job.start();
+        success = `Job "${job.context}" gestartet.`;
+        break
+      }
+      case 'pause': {
+        job.stop();
+        success = `Job "${job.context}" pausiert.`;
+        break
+      }
+      case 'save': {
+        if (validateCronExpression(cronTimeString)) {
+
+          job.setTime(new CronTime(cronTimeString));
+          success = `Cron-Zeitmuster ${job.cronTime} für Job "${job.context}" gesetzt.`;
+
+          log("***", autoStart);
+          writeToCronTab(jobName, cronTimeString, autoStart)
+
+        } else {
+          res.json({ "error": `Der Ausdruck "${cronTimeString}" ist kein gültiges Cron-Zeitmuster` });
+          return
+        }
+        break
+      }
+    }
+    res.json({ "success": success });
 
   } catch (err) {
     errorHandler(err, 'cronAction', res);
