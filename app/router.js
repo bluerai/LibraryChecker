@@ -34,18 +34,3 @@ router.post('/waitlist/del', deleteSearchItemAction);
 router.post('/waitlist/get', getWaitlistAction);
 router.post('/waitlist/upd', updWaitListAction);
 
-
-//cron-Jobs starten
-/* (checkerCronJob) && checkerCronJob.start();
-(fullCheckerCronJob) && fullCheckerCronJob.start();
-(queryCronJob) && queryCronJob.start();
-
-if (log.isLevelEnabled('debug')) {
-  try {
-    (queryCronJob) && log.debug(`Cron: Next queryCronJob: ${queryCronJob.nextDate().toISO()}`);
-    (checkerCronJob) && log.debug(`Cron: Next checkerCronJob: ${checkerCronJob.nextDate().toISO()}`);
-    (fullCheckerCronJob) && log.debug(`Cron: Next fullCheckerCronJob: ${fullCheckerCronJob.nextDate().toISO()}`);
-  } catch (error) {
-    log.error(error)
-  }
-} */

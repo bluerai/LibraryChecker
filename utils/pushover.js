@@ -1,7 +1,7 @@
 'use strict';
 
 import fs from 'fs-extra';
-import log from './log.js';
+import { log } from './log.js';
 import path from 'path';
 
 const messagingfile = path.join(path.resolve(process.env.DATADIR || './data'), 'config', 'pushover.json');

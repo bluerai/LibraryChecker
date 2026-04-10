@@ -4,6 +4,8 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 
+import { log } from '../utils/log.js';
+
 const gzipPromise = promisify(gzip);
 const gunzipPromise = promisify(gunzip);
 
@@ -38,7 +40,7 @@ export class BackupService {
 
       return { success: true, path: backupPath };
     } catch (error) {
-      console.error('Backup failed:', error);
+      log.error('Backup failed:', error);
       throw error;
     }
   }
@@ -69,10 +71,10 @@ export class BackupService {
       // Nur letzten 7 Backups behalten
       const toDelete = backupFiles.slice(7);
       await Promise.all(
-        toDelete.map(file => fs.unlink(file.path).catch(console.error))
+        toDelete.map(file => fs.unlink(file.path).catch(log.error))
       );
     } catch (error) {
-      console.error('Backup cleanup error:', error);
+      log.error('Backup cleanup error:', error);
       throw error;
     }
   }
@@ -140,7 +142,7 @@ export class BackupService {
 
       return { success: true };
     } catch (error) {
-      console.error('Restore failed:', error);
+      log.error('Restore failed:', error);
       throw error;
     }
   }

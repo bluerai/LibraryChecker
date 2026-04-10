@@ -1,5 +1,5 @@
 import { MongoClient, ObjectId } from 'mongodb';
-import log from '../utils/log.js';
+import { log } from '../utils/log.js';
 
 const mongoUrl = process.env.CHECKLIBDB_URL || 'mongodb://localhost:27017';
 const dbName = process.env.CHECKLIBDB_NAME || 'library_info';
@@ -64,7 +64,7 @@ export async function findItemDone(searchString) {
     });
     return item;
   } catch (error) {
-    console.error(error);
+    log.error(error);
     log.error('Datenbankfehler:' + JSON.stringify(error));
     throw error;
   }
@@ -83,7 +83,7 @@ export async function findItemReserved(kennung, searchString) {
     });
     return item;
   } catch (error) {
-    console.error(error);
+    log.error(error);
     log.error('Datenbankfehler:' + JSON.stringify(error));
     throw error;
   }
@@ -117,7 +117,7 @@ export async function findSiblings(kennung, searchString) {
     return items;
 
   } catch (error) {
-    console.error(error);
+    log.error(error);
     log.error('Datenbankfehler:' + JSON.stringify(error));
     throw error;
   }
@@ -314,7 +314,7 @@ export async function upsertItems(items) {
       return { success: true, resultCounts, datumChangedCount };
 
     } catch (error) {
-      console.error(error);
+      log.error(error);
       return { error: error.message };
     }
   }
@@ -390,7 +390,7 @@ export async function findSearchItems(filterOptions, sortOptions = {}) {
     return await result.toArray();
 
   } catch (error) {
-    console.error('Fehler bei der Suche:', error);
+    log.error('Fehler bei der Suche:', error);
     throw new Error('Datenbankabfrage fehlgeschlagen');
   }
 }

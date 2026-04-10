@@ -1,5 +1,5 @@
 import { findItemDone, findItemReserved } from '../app/model.js';
-import log  from './log.js';
+import { log } from './log.js';
 
 const cassisHost = process.env.CASSIS_HOST;
 const scraperHost = process.env.SCRAPER_HOST;
@@ -17,7 +17,7 @@ export async function checkCassis(item) {
     result = await fetch(url);
 
   } catch (error) {
-    console.error(error);
+    log.error(error);
     throw new Error(`HTTP error! status: ${result.status}`);
   }
 
@@ -48,11 +48,11 @@ export async function searchCassis(searchString) {
     result = await fetch(url);
 
   } catch (error) {
-    console.error('Fehlertyp:', error.name); // → z. B. "TypeError", "AbortError"
-    console.error('Fehlermeldung:', error.message);
+    log.error('Fehlertyp:', error.name); // → z. B. "TypeError", "AbortError"
+    log.error('Fehlermeldung:', error.message);
     // Weitere systemabhängige Eigenschaften:
-    console.error('Code:', error.code); // → z. B. "ENOTFOUND" (DNS), "ECONNREFUSED"
-    console.error('Stack:', error.stack);
+    log.error('Code:', error.code); // → z. B. "ENOTFOUND" (DNS), "ECONNREFUSED"
+    log.error('Stack:', error.stack);
 
     throw new Error(`HTTP error! ${JSON.stringify(result)}`);
   }
@@ -244,7 +244,7 @@ export async function queryOnleihe(kennung, limit) {
     data = await result.json();
 
   } catch (error) {
-    console.error(error);
+    log.error(error);
     throw new Error(`error in queryOnleihe: ${error.message}`);
   }
   return data;

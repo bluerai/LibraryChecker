@@ -35,7 +35,7 @@ async function validate() {
       }
     }
   } catch (error) {
-    console.error('validate error:', error);
+    log.error('validate error:', error);
   }
 }
 
@@ -69,10 +69,10 @@ async function login(first_login) {
         document.getElementById('login').innerHTML = '';
         document.getElementById('app').style.display = 'block';
       } else {
-        console.error("login: Credentials not valid. Try again!");
+        log.error("login: Credentials not valid. Try again!");
       }
     } catch (error) {
-      console.error('login error:', error);
+      log.error('login error:', error);
     }
   }
 }
@@ -274,7 +274,7 @@ function filterTable(filterText = '', filterPrio = false, filterReserv = false) 
       row.style.display = (displayCondition ? '' : 'none');
 
     } catch (e) {
-      console.error('Fehler beim Filtern:', e);
+      log.error('Fehler beim Filtern:', e);
       row.style.display = '';
     }
   });
@@ -722,15 +722,15 @@ async function importData() {
     })
     if (!limit) return showToast('Online-Abfrage: Bitte Anzahl von Datensätzen auswählen. ', 'warning');
 
+    const statusmsg = document.querySelector('#importData .statusmsg');
+    statusmsg.style.display = 'block';
+    insertTextWithSpinner(statusmsg, "Online-Abfrage gestartet ... ");
+
     const result = await fetch('/import', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
       body: JSON.stringify({ kennung, limit })
     });
-
-    const statusmsg = document.querySelector('#importData .statusmsg');
-    statusmsg.style.display = 'block';
-    insertTextWithSpinner(statusmsg, "Online-Abfrage gestartet ... ");
 
     const data = await result.json();
 
@@ -815,8 +815,8 @@ function loadCronModal() {
       });
 
       const data = await result.json();
-
-      if (result.ok)
+      
+      if (data.success)
         showToast(data.success, 'info');
       else
         showToast(data.error, 'warning');
@@ -1212,7 +1212,7 @@ async function createBackup() {  //Backup - Neues Backup erstellen
       throw new Error(data.message || 'Backup fehlgeschlagen');
     }
   } catch (error) {
-    console.error('Backup error:', error);
+    log.error('Backup error:', error);
     showToast(`Fehler: ${error.message}`, 'danger');
   } finally {
     btn.disabled = false;
@@ -1300,7 +1300,7 @@ async function loadBackups() {  //Backup Laden beim öffnen
           <td colspan="4" class="text-center text-danger">Fehler beim Laden: ${error.message}</td>
         </tr>
       `;
-    console.error('Backup loading error:', error);
+    log.error('Backup loading error:', error);
   }
 }
 
@@ -1340,7 +1340,7 @@ async function restoreBackup(backupName) { //Backup - Restore
       throw new Error(data.message || 'Wiederherstellung fehlgeschlagen');
     }
   } catch (error) {
-    console.error('Restore error:', error);
+    log.error('Restore error:', error);
     showToast(`Fehler: ${error.message}`, 'danger');
   }
 }
@@ -1365,7 +1365,7 @@ async function deleteBackup(backupName) { //Backup - Delete
       throw new Error(data.message || 'Löschen fehlgeschlagen');
     }
   } catch (error) {
-    console.error('Delete error:', error);
+    log.error('Delete error:', error);
     showToast(`Fehler: ${error.message}`, 'warning');
   }
 }
@@ -1424,7 +1424,7 @@ const copyToClipboard = async (text, feedbackElement) => {
       setTimeout(() => feedbackElement.textContent = '', 2000);
     }
   } catch (err) {
-    console.error("Copy failed:", err);
+    log.error("Copy failed:", err);
     if (feedbackElement) {
       feedbackElement.textContent = "Fehler!";
     }

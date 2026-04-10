@@ -1,7 +1,7 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
-import log from '../utils/log.js';
+import { log } from '../utils/log.js';
 
 import { BackupService } from './model.js';
 

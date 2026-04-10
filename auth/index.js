@@ -5,7 +5,7 @@ import fs from 'fs-extra';
 import argon2 from 'argon2';
 import crypto from 'crypto';
 import { join } from 'path';
-import log from '../utils/log.js';
+import { log } from '../utils/log.js';
 
 const CHECKLIB_CONFIG = join(process.env.DATADIR, "config");
 fs.ensureDirSync(CHECKLIB_CONFIG, (error, exists) => {

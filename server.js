@@ -7,7 +7,7 @@ import os from 'os';
 import * as model from './app/model.js';
 import router from './app/router.js';
 import backupRouter from './backup/router.js';
-import log from './utils/log.js';
+import { log } from './utils/log.js';
 import { verifyAction, loginAction, protect } from './auth/index.js';
 
 const app = express();
@@ -48,7 +48,7 @@ app.locals.daysFromToday = (date) => {
 
 // Datenbankverbindung
 model.connect().catch(err => {
-  console.error('Database connection failed:', err);
+  log.error('Database connection failed:', err);
   process.exit(1);
 });
 
@@ -60,23 +60,16 @@ try {
   const result = await fetch(`http://${host}/api/health`); //{"healthy":true}
   const data = await result.json();
   if (data.healthy)
-    log(`Cassis host ${host} found & working correctly.`);
+    log(`Cassis host ${host} responding correctly.`);
   else
     throw new Error(`Cassis-Server not healthy.`)
 } catch (error) {
-  console.error(`Error accessing Cassis host at ${process.env.CASSIS_HOST}.`);
+  log.error(`Error accessing Cassis host at ${process.env.CASSIS_HOST}.`);
   process.exit(1);
 }
 
-app.use(morgan('common', {
-  immediate: true,
-  skip: (req, res) => req.url.startsWith('/app/cover')
-}));
-/* 'tiny': Gibt minimale Informationen aus(z.B.GET / 200 10 - 1.234 ms).
-'combined': Gibt detaillierte Informationen im Apache - Combined - Format aus.
-'common': Gibt Informationen im Apache - Common - Format aus.
-'dev': Farbige Ausgabe für die Entwicklung(Statuscodes werden farblich hervorgehoben).
-'short': Kürzere Ausgabe als 'common'. */
+// Morgans Stream auf Winston log umleiten
+app.use(morgan('short', { stream: { write: (message) => log('\x1b[32m' + message.trim()) } }));
 
 // Routen
 app.get('/verify', verifyAction);
@@ -84,9 +77,6 @@ app.post('/login', loginAction);
 app.get('/api/health', healthAction);
 app.use('/api/backups', protect, backupRouter);
 app.use('/', protect, router);
-
-
-log.info('cron-Jobs starten');
 
 
 if (HTTPS_PORT >= 0) {

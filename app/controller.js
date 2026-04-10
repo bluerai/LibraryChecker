@@ -14,7 +14,7 @@ import {
   processImportedData, getToday
 } from '../utils/searchForBooks.js';
 
-import log from '../utils/log.js';
+import { log } from '../utils/log.js';
 
 /* status:
 * jetzt ausleihbar
@@ -62,7 +62,7 @@ export const httpRoot = {
 function renderResultslistEntry(res, item, targetId, options) {
   res.render(join(import.meta.dirname, 'views', 'listEntry'), { item, targetId }, function (err, html) {
     if (err) {
-      console.error(err);
+      log.error(err);
       res.status(500).json({ error: 'renderResultslistEntry: ' + err.message });
     } else {
       res.status(200).json({ html, options });
@@ -443,7 +443,7 @@ export async function fullSearchAction(req, res) {
 
     res.render(join(import.meta.dirname, 'views', 'resultlist'), { results: preparedResults }, function (err, html) {
       if (err) {
-        console.error(err);
+        log.error(err);
         res.status(500).json({ error: 'render resultlist: ' + err.message });
       } else {
         res.status(200).json({ html: html });
@@ -510,7 +510,7 @@ export async function bulkUpdate(items, minWait) {   //minWait in sec zwischen d
     }
   }
 
-  const message = `${items.length} Bücher, verfügbar: ${availCount}, Datum aktualisiert: ${availDateCount}, `;
+  const message = `${items.length} Bücher aktualisiert, verfügbar: ${availCount}, neues Datum: ${availDateCount}, `;
 
   log.debug(message);
   return { success: message };
@@ -686,11 +686,20 @@ export async function cronJobsAction(req, res) {
     let html = `<div class="table-responsive"><table class="table table-hover"><thead><tr><th>Job</th><th>Nächste Ausführung</th><th>Zeitmuster</th></tr></thead><tbody>`
     sortedJobs.forEach((job, name) => {
       html += `<tr onClick="openCronModal('${name}','${job.cronTime}', ${getAutoStart(name)})"><td>${job.context}</td>`
+
       if (job.isActive)
-        html += `<td>${job.nextDate().toISO().split('.')[0].replace('T', ', ')}</td><td>${job.cronTime}</td><td>${getAutoStart(name)}</td><tr>`
+        html += `<td class='text-primary'>${job.nextDate().toISO().split('.')[0].replace('T', ', ')}</td>`
       else
-        html += `<td>---</td><td>---</td><td>${getAutoStart(name)}</td><tr>`
+        html += `<td>pausiert</td>`
+
+      html += `<td>${job.cronTime}</td><td>`;
+
+      if (getAutoStart(name) === true)
+        html += `<i class="bi bi-send" style="font-size: 18px"></i>`;
+
+      html += `</td></tr>`
     })
+
     html += `</tbody></table></div>`
 
     res.json({ html });
@@ -702,46 +711,44 @@ export async function cronJobsAction(req, res) {
 
 export async function cronAction(req, res) {
   try {
-    log(req.params, req.body);
+    log("cronAction:", req.params, req.body);
     const { jobName, cronTimeString, autoStart } = req.body;
     const action = req.params.action;
-    log.info(`cronAction`, action, jobName, cronTimeString);
-
     const job = cronJobs.get(jobName);
 
-
-    log("***", job.context, job.isActive, job.nextDate().toISO().split('.')[0].replace('T', ', '), autoStart)
-
-    let success = `Aktion "${action}" ist nicht definiert.`
+    let result;
 
     switch (action) {
       case 'start': {
         job.start();
-        success = `Job "${job.context}" gestartet.`;
+        result = { "success": `Job "${job.context}" gestartet.` };
         break
       }
       case 'pause': {
         job.stop();
-        success = `Job "${job.context}" pausiert.`;
+        result = { "success": `Job "${job.context}" pausiert.` };
         break
       }
       case 'save': {
-        if (validateCronExpression(cronTimeString)) {
+        const checkCronTime = validateCronExpression(cronTimeString);
 
+        if (checkCronTime?.valid) {
           job.setTime(new CronTime(cronTimeString));
-          success = `Cron-Zeitmuster ${job.cronTime} für Job "${job.context}" gesetzt.`;
-
-          log("***", autoStart);
           writeToCronTab(jobName, cronTimeString, autoStart)
+          result = { "success": `Job "${job.context}" wurde gespeichert.` };
 
         } else {
-          res.json({ "error": `Der Ausdruck "${cronTimeString}" ist kein gültiges Cron-Zeitmuster` });
-          return
+          result = { "error": `Der Ausdruck "${cronTimeString}" ist kein gültiges Cron- Zeitmuster: ${checkCronTime.error.message} ` };
+
         }
         break
       }
+      default: {
+        result = { "error": `Aktion "${action}" ist nicht definiert.` };
+      }
     }
-    res.json({ "success": success });
+
+    res.json(result);
 
   } catch (err) {
     errorHandler(err, 'cronAction', res);
@@ -753,7 +760,7 @@ export async function cronAction(req, res) {
 export async function upsertSearchItemAction(req, res) {
   try {
     const { searchString, mediaType, kennungen, targetDate } = req.body;
-    log.info(`upsertSearchItemAction: searchString=${searchString}, mediaType=${mediaType}, kennungen=${kennungen}, targetDate=${targetDate}`);
+    log.info(`upsertSearchItemAction: searchString = ${searchString}, mediaType = ${mediaType}, kennungen = ${kennungen}, targetDate = ${targetDate} `);
 
     let item = { searchString, mediaType, kennungen, targetDate, available: [] };
 
@@ -784,7 +791,7 @@ export async function upsertSearchItemAction(req, res) {
 
 export async function getWaitlistAction(req, res) {
   try {
-    log.info(`getWaitlistAction: path=`, req.path, `body=`, req.body);
+    log.info(`getWaitlistAction: path = `, req.path, `body = `, req.body);
 
     const { field, direction } = req.body;
     const items = await findSearchItems({}, { 'status': -1, 'targetDate': 1 });
@@ -862,7 +869,7 @@ export async function updateSearchItems(items) {
             upsertItem(result);
 
             item.available.push(kennung);
-            pushover.sysnote(`"${item.searchString}" ist jetzt verfügbar!`, `Library Checker ${kennung}`);
+            pushover.sysnote(`"${item.searchString}" ist jetzt verfügbar!`, `Library Checker ${kennung} `);
 
             item.status = "=";
 
@@ -880,7 +887,7 @@ export async function updateSearchItems(items) {
 export async function deleteSearchItemAction(req, res) {
   try {
     const { itemId } = req.body;
-    log.debug(`deleteSearchItemAction: itemId=${itemId}`);
+    log.debug(`deleteSearchItemAction: itemId = ${itemId} `);
 
     // Datenbankzugriff
     const result = deleteSearchItem(itemId);

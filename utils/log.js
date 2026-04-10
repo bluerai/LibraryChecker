@@ -4,30 +4,59 @@ import winston from 'winston';
 import 'winston-daily-rotate-file';
 import util from 'util';
 import path from 'path';
+import stringLength from 'string-length';
+
+const levels = ['error', 'warn', 'info', 'debug', 'silly'];
 
 const { combine, timestamp, printf, colorize, json, errors } = winston.format;
 
 const logdir = path.join(path.resolve(process.env.DATADIR || './data'), 'logs');
-
 const consoleSilent = (process.env.LOG_TO_CONSOLE === "false") ? true : false;
 const fileSilent = (process.env.LOG_TO_FILE === "true") ? false : true;
 
-const consoleFormat = combine(
-  colorize(),
-  timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
-  printf(info => `[${info.timestamp}] ${info.level}: ${info.message}`)
-);
+/* const colorCodes = {
+  error: '\x1b[31m',  //rot
+  info: '\x1b[32m',   //green
+  warn: '\x1b[33m',   //gelb
+  debug: '\x1b[34m',  //blau
+  silly: '\x1b[35m',  //margenta
+  cyan: '\x1b[36m',   //cyan
+  white: '\x1b[37m'  //white
+} */
 
-const fileFormat = combine(
-  errors({ stack: true }),
+const messageColorCodes = {
+  info: '',
+  debug: '',
+  silly: '',
+  warn: '\x1b[33m',   //gelb
+  error: '\x1b[31m',  //rot
+}
+
+const resetCode = '\x1b[0m';
+
+const removeColors = (str) => str.replace(/\x1b\[[0-9;]*m/g, '');
+
+const consoleFormat = combine(
+  colorize({
+    level: true, message: false
+  }),
   timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
-  json()
+  printf((info) => {
+    const message = messageColorCodes[removeColors(info.level)] + `${info.message}` + resetCode;
+    return `[${info.timestamp}] ${info.level}${' '.repeat(6 - stringLength(info.level))}${message}`
+  })
 );
 
 const consoleTransport = new winston.transports.Console({
   format: consoleFormat,
   silent: consoleSilent,
 });
+
+const fileFormat = combine(
+  errors({ stack: true }),
+  timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
+  json()
+);
 
 const fileTransport = new winston.transports.DailyRotateFile({
   filename: `${logdir}/full_%DATE%.log`,
@@ -46,8 +75,6 @@ export const logger = winston.createLogger({
   ]
 });
 
-const levels = ['error', 'warn', 'info', 'debug', 'silly'];
-
 levels.forEach(level => {
   const original = logger[level].bind(logger);
 
@@ -62,17 +89,12 @@ levels.forEach(level => {
   };
 });
 
-export default function log(...args) {   logger.info(...args); }
+export function log(...args) { logger.info(...args); }
 log.info = (...args) => logger.info(...args);
 log.warn = (...args) => logger.warn(...args);
 log.error = (...args) => logger.error(...args);
 log.debug = (...args) => logger.debug(...args);
-log.silly = (...args) => logger.silly(...args);/* 
-export function info(...args) { logger.info(...args); }
-export function warn(...args) { logger.warn(...args); }
-export function error(...args) { logger.error(...args); }
-export function debug(...args) { logger.debug(...args); }
-export function silly(...args) { logger.silly(...args); } */
+log.silly = (...args) => logger.silly(...args);
 
 log.isLevelEnabled = (...args) => logger.isLevelEnabled(...args);
 
@@ -82,6 +104,4 @@ log(
   (!consoleTransport.silent && !fileTransport.silent) ? "and" : "",
   (fileTransport.silent) ? "" : "to file"
 );
-
-
 

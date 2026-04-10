@@ -5,7 +5,7 @@ import { pushover } from './pushover.js';
 import { join } from 'path';
 import fs from 'fs-extra';
 
-import log from './log.js';
+import { log } from './log.js';
 import { findEBooksToCheck } from '../app/model.js';
 import { bulkUpdate, updateSearchItems, importData } from '../app/controller.js';
 import { findSearchItems } from '../app/model.js';
@@ -19,7 +19,7 @@ function readCronTab() {
   if (fs.existsSync(cronFile))
     return fs.readJsonSync(cronFile);
   else
-    return [];
+    return {};
 }
 
 export function writeToCronTab(jobName, cronTime, autoStart) {
@@ -29,7 +29,7 @@ export function writeToCronTab(jobName, cronTime, autoStart) {
 }
 
 export function getAutoStart(jobName) {
-  return cronTab[jobName].autoStart;
+  return cronTab[jobName]?.autoStart;
 }
 
 const queryTargets = [
@@ -143,10 +143,10 @@ async function queryJob() {
       try {
         const result = await importData(target.kennung, target.limit);
 
-        log.debug('Cron: queryJob:', target.kennung, result.message);
+        log.debug('Cron: queryJob:', target.kennung, result,);
 
         if (result.success) {
-          if (result.avaliable !== 0)
+          if (result.available !== 0)
             pushover.sysinfo(result.success, `Online-Abfrage ${target.kennung}`);
           else
             pushover.sysnote(result.success, `Online-Abfrage ${target.kennung}`);
