@@ -32,18 +32,11 @@ app.locals.formatDate = (dateValue) => {
   if (!dateValue) return '';
   const date = new Date(dateValue);
   if (isNaN(date.getTime())) return 'N/A';
-  return date.toLocaleString('de-DE', {
-    timeZone: 'Europe/Berlin',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  }).replace(',', '');
+  return date.toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })
 };
 
 app.locals.daysFromToday = (date) => {
-  return Math.floor((new Date - new Date(date)) / 24 / 60 / 60 / 1000);
+  return Math.floor((new Date - new Date(date)) / 24 / 3600 / 1000);
 };
 
 // Datenbankverbindung
@@ -69,7 +62,7 @@ try {
 }
 
 // Morgans Stream auf Winston log umleiten
-app.use(morgan('short', { stream: { write: (message) => log('\x1b[32m' + message.trim()) } }));
+app.use(morgan('short', { stream: { write: (message) => log.http(message.trim().replace('::ffff:', '')) } }));
 
 // Routen
 app.get('/verify', verifyAction);

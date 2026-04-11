@@ -354,7 +354,7 @@ async function updateItem(item, targetId) {  // Menu - aktualisieren
         style="width:40px" readonly="readonly" title="Status" value="${data.options.item.status}">`
       document.getElementById('datum').value = data.options.item.datum;
       document.getElementById('received').value = data.options.item.received;
-      document.getElementById('lastUpdated').value = data.options.item.lastUpdated || "N/A";
+      document.getElementById('lastUpdated').value = formatDate(data.options.item.lastUpdated);
       document.getElementById('searchString').value = data.options.item.searchString;
 
       const message = data.options.message || "Keine Änderung der Verfügbarkeit";
@@ -815,7 +815,7 @@ function loadCronModal() {
       });
 
       const data = await result.json();
-      
+
       if (data.success)
         showToast(data.success, 'info');
       else
@@ -833,7 +833,7 @@ function openCronModal(jobName, jobCronTime, autoStart) {
   // Modal-Elemente
   if (!cronModal) loadCronModal();
 
-  document.getElementById('jobName').textContent = jobName; 
+  document.getElementById('jobName').textContent = jobName;
   document.getElementById('cronTimeInput').value = jobCronTime;
   document.getElementById('autoStartCheckBox').checked = autoStart;
 
