@@ -157,7 +157,7 @@ export async function updateItemById(item, upsert = false) {
     }
   );
 
-  //log.debug("updateItemById: " + JSON.stringify(result))
+  //log.debug("updateItemById: ", result)
   return result;
 }
 

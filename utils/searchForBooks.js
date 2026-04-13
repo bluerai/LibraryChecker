@@ -128,14 +128,14 @@ function containsAllFragments(itemSearchString, searchString) {
 }
 
 export async function checkOnleihe(item0, limit = 1) {
-  log.debug('checkOnleihe:', item0.kennung, item0.searchString, 'Limit:', limit);
+  log.info('checkOnleihe:', item0.kennung, item0.searchString, "mediaId:", item0.mediaId, 'Limit:', limit);
 
   let url;
   if (['HESS', 'DÜS'].includes(item0.kennung))
-    url = ((limit !== 1) || (['ePaper', 'eMagazine'].includes(item0.mediaType)) || !(item0.mediaData?.mediaId) || item0.mediaData.mediaId.length <= 12) ?
+    url = ((limit !== 1) || !(item0.mediaId)) ?
       `http://${scraperHost}/search` :
       `http://${scraperHost}/details`;
-
+    //(['ePaper', 'eMagazine'].includes(item0.mediaType)) || 
 
   else if (['THÜR', 'GOET'].includes(item0.kennung))
     url = `http://${scraperHost}/search2`
@@ -154,8 +154,8 @@ export async function checkOnleihe(item0, limit = 1) {
   if (data.error) throw new Error(data.error)
   if (data.length == 0) return data;
 
-  log.debug('checkOnleihe: data.length=', data.length);
-  //log.debug('checkOnleihe: data=', data);
+  log.info('checkOnleihe: data.length=', data.length);
+  log.debug('checkOnleihe: data=', data);
 
   let results = [];
 
@@ -211,11 +211,7 @@ export async function checkOnleihe(item0, limit = 1) {
     }
   }
 
-  /* if (results.length === 0)
-    results.push({ status: "!", kennung: item0.kennung, searchString: item0.searchString, datum: "N/A", mediaType: item0.mediaType });
- */
-
-  log.debug(results);
+  log.silly("checkOnleihe results:",results);
 
   return results;
 

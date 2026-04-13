@@ -277,6 +277,7 @@ async function singleSearch(item) {
       item.received = result.received;
       item.mediaType = result.mediaType;
       item.mediaData = result.mediaData;
+      item.mediaId = result.mediaId;
     }
   }
   return item;
@@ -293,12 +294,11 @@ export async function updateItemAction(req, res) {
     if (!searchResult) {
       return res.status(404).json({ message: 'updateItemAction: No item found' });
     }
-    log.debug('updateItemAction: ', searchResult);
     const item = await updateItemById(searchResult, upsert);
     if (!item) {
       return res.status(404).json({ message: 'updateItemAction: item not saved' });
     }
-
+    log.debug('updateItemAction: ', item);
     let message;
 
     if (item.status === "*") {
