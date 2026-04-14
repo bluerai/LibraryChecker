@@ -1,7 +1,7 @@
 import express from 'express';
 
 import {
-  homeAction, listAction, jsonFileAction, importAction as importAction, updateItemAction as updateItemAction,
+  homeAction, listAction, jsonFileAction, importAction, updateItemAction,
   bulkUpdateAction as bulkUpdateAction, markAsDoneAction, markAsReservedAction, resetAction, clearAction,
   deleteAction, itemAction, fullSearchAction, changeAction, upsertSearchItemAction, getWaitlistAction,
   deleteSearchItemAction, updWaitListAction, cronAction, cronJobsAction
@@ -17,7 +17,7 @@ router.get('/list', listAction);
 router.post('/import', importAction);
 router.post('/menu', itemAction);
 router.post('/update', bulkUpdateAction);
-router.post('/updItem', updateItemAction);
+router.post('/updItem', updateItemAction);  //importItem, updateItem
 router.post('/upl/json', upload.single('jsonlistFile'), jsonFileAction);
 router.post('/done', markAsDoneAction);
 router.post('/change', changeAction);

@@ -137,13 +137,13 @@ async function queryJob() {
   let success = new Set();
 
   for (const target of queryTargets) {
-    log.debug('Cron: queryJob:', target.kennung);
+    log.info('Cron: queryJob:', target.kennung);
 
     if (!success.has(target.kennung)) {
       try {
         const result = await importData(target.kennung, target.limit);
 
-        log.debug('Cron: queryJob:', target.kennung, result,);
+        log.debug('Cron: queryJob:', target.kennung, result.succes);
 
         if (result.success) {
           if (result.available !== 0)

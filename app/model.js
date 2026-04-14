@@ -149,6 +149,9 @@ export async function updateItemById(item, upsert = false) {
       $set: {
         ...updateData,
         lastUpdated: new Date()
+      },
+      $setOnInsert: {
+        createdAt: new Date()
       }
     },
     {
@@ -157,7 +160,8 @@ export async function updateItemById(item, upsert = false) {
     }
   );
 
-  //log.debug("updateItemById: ", result)
+  if (!itemId) log.debug('updateItemById:', ('new Item:', result));
+
   return result;
 }
 
@@ -271,8 +275,6 @@ export async function upsertItems(items) {
 
   log.debug(`upsertItems: datum wird in ${datumChangedCount} von ${items.length} Items geändert`);
 
-
-
   const bulkOps = items.map(item => {
 
     let filter;
@@ -305,6 +307,8 @@ export async function upsertItems(items) {
       resultCounts = await DATA_COLL.bulkWrite(bulkOps, { ordered: false });
 
       log.debug('bulkWrite: resultCounts:', JSON.stringify(resultCounts))
+
+      for (const key in resultCounts.upsertedIds) { log("'upsertItems:", "New item:", items[key]); }
 
       // Fehler protokollieren
       if (resultCounts.writeErrors?.length > 0) {

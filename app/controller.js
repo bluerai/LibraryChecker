@@ -277,7 +277,8 @@ async function singleSearch(item) {
       item.received = result.received;
       item.mediaType = result.mediaType;
       item.mediaData = result.mediaData;
-      item.mediaId = result.mediaId;
+
+      if (result.mediaId && result.mediaId.length > 12) item.mediaId = result.mediaId;
     }
   }
   return item;
@@ -285,6 +286,41 @@ async function singleSearch(item) {
 
 
 export async function updateItemAction(req, res) {
+  try {
+    const { item: item0, targetId, upsert } = req.body;
+    log.info(`updateItemAction: item0=`, item0.kennung, item0.searchString, ", targetId=", targetId);
+
+    const oldDatum = item0.datum || undefined;
+    let searchResult = await singleSearch(item0);
+    if (!searchResult) {
+      return res.status(404).json({ message: 'updateItemAction: No item found' });
+    }
+    const item = await updateItemById(searchResult, upsert);
+    if (!item) {
+      return res.status(404).json({ message: 'updateItemAction: item not saved' });
+    }
+
+ 
+
+    let message;
+
+    if (item.status === "*") {
+      message = `${item.mediaType} jetzt ausleihbar!`
+    } else if (oldDatum !== item.datum) {
+      message = `${item.mediaType} verfügbar ab ${item.datum}`;
+    }
+
+    const options = { item, message }
+
+    renderResultslistEntry(res, item, targetId, options)
+
+  } catch (err) {
+    errorHandler(err, 'updateItemAction', res);
+  }
+}
+
+
+export async function importItemAction(req, res) {
   try {
     const { item: item0, targetId, upsert } = req.body;
     log.info(`updateItemAction: item0=`, item0.kennung, item0.searchString, ", targetId=", targetId);

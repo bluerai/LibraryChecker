@@ -155,7 +155,7 @@ export async function checkOnleihe(item0, limit = 1) {
   if (data.length == 0) return data;
 
   log.info('checkOnleihe: data.length=', data.length);
-  log.debug('checkOnleihe: data=', data);
+  log.silly('checkOnleihe: data=', data);
 
   let results = [];
 
@@ -328,8 +328,7 @@ export async function processImportedData(kennung, data) {
       received
     };
 
-    if (mediaData.mediaId && mediaData.mediaId.length > 12)
-      result.mediaId = mediaData.mediaId;
+    if (mediaData.mediaId && mediaData.mediaId.length > 12) result.mediaId = mediaData.mediaId;
 
     // nur sichern, wenn nicht in Cassis und nicht in "Erledigt"
     if (result.status !== "^" && result.listType !== 'donelist') {
