@@ -149,9 +149,6 @@ export async function updateItemById(item, upsert = false) {
       $set: {
         ...updateData,
         lastUpdated: new Date()
-      },
-      $setOnInsert: {
-        createdAt: new Date()
       }
     },
     {
@@ -257,7 +254,7 @@ export async function upsertItems(items) {
 
   let datumChangedCount = 0;
 
-  // Für jeden Item prüfen, ob sich 'datum' ändern würde
+  // Für jedes Item prüfen, ob sich 'datum' ändert
   for (const item of items) {
 
     const existingDoc = await DATA_COLL.findOne(
