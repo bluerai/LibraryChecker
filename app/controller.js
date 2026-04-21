@@ -213,14 +213,13 @@ export async function importData(kennung, limit) {
   const { results, availableCount } = await processImportedData(kennung, queryData);
 
   log.debug("importData: availableCount=", availableCount);
-  //log.debug(results);
 
   let message;
   if (results && results.length > 0) {
     const { resultCounts, datumChangedCount } = await upsertItems(results);
     message = `${kennung}: ${queryData.length} Bücher, neu: ${resultCounts?.upsertedCount}, verfügbar: ${availableCount}, aktualisiert: ${resultCounts?.modifiedCount}, neues Datum: ${datumChangedCount}`
   } else {
-    message = `${kennung}: 0 Bücher, neu: 0, verfügbar: 0, aktualisiert: 0, neues Datum: 0`
+    message = `${kennung}: ${queryData.length} Bücher, neu: 0, verfügbar: 0, aktualisiert: 0, neues Datum: 0`
   }
 
   return ({ available: availableCount, success: message });

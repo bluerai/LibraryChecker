@@ -97,15 +97,14 @@ export async function checkReserved(kennung, searchString) {
 
 // Normalisierung: Kleinbuchstaben, Sonderzeichen durch Leerzeichen ersetzen
 const whitespace_chars = /[\/\,\.\|\ \*\?\!\:\;\(\)\[\]\&\"\+\-\_\%]+/g;
-//whitespace_char01: In der Onleihe Zeichen zur Abtrennung des Artikels am Anfang von Titeln (für die Sortierung):
+/*//whitespace_char01: In der Onleihe Zeichen zur Abtrennung des Artikels am Anfang von Titeln (für die Sortierung):
 const whitespace_char01 = String.fromCharCode(172);
-
+.replaceAll(whitespace_char01, " ") */
 
 function normalizeString(str) {
   return str.toLowerCase()
-    .replaceAll(whitespace_char01, " ")
     .replaceAll(whitespace_chars, " ")
-    .replace(/\s+/g, ' ')          // Mehrfache Leerzeichen zu einem
+    .replaceAll(/\s+/g, ' ')          // Mehrfache Leerzeichen zu einem
     .trim();
 }
 
@@ -300,8 +299,10 @@ export async function processImportedData(kennung, data) {
             datum = today;
             availableCount++;
           } else {
-            if (!datum || datum === "") status = "+"    //fehlerhaft: nicht verfügbar, aber kein Datum 
-            else status = "=";    // ausleihbar, jetzt aber nicht verfügbar
+            if (!datum || datum === "") 
+              status = "+"    //fehlerhaft: nicht verfügbar, aber kein Datum 
+            else 
+              status = "=";    // ausleihbar, jetzt aber nicht verfügbar
             watchListCount++
           }
           listType = 'watchlist';
