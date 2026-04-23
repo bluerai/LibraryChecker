@@ -32,13 +32,19 @@ export function getAutoStart(jobName) {
   return cronTab[jobName]?.autoStart;
 }
 
-const queryTargets = [
-  { kennung: 'THÜR', limit: process.env.QUERYLIMIT_THUER || 240 },
-  { kennung: 'HESS', limit: process.env.QUERYLIMIT_HESS || 160 },
-  { kennung: "GOET", limit: process.env.QUERYLIMIT_GOET || 40 },
-  { kennung: 'DÜS', limit: process.env.QUERYLIMIT_DUES || 80 }
+const queryTargetsMax = [
+  { kennung: 'THÜR', limit: process.env.QUERYLIMITMAX_THUER || 240 },
+  { kennung: 'HESS', limit: process.env.QUERYLIMITMAX_HESS || 160 },
+  { kennung: "GOET", limit: process.env.QUERYLIMITMAX_GOET || 40 },
+  { kennung: 'DÜS', limit: process.env.QUERYLIMITMAX_DUES || 80 }
 ];
 
+const queryTargetsMin = [
+  { kennung: 'THÜR', limit: process.env.QUERYLIMIT_THUER || 60 },
+  { kennung: 'HESS', limit: process.env.QUERYLIMIT_HESS || 40 },
+  { kennung: "GOET", limit: process.env.QUERYLIMIT_GOET || 20 },
+  { kennung: 'DÜS', limit: process.env.QUERYLIMIT_DUES || 40 }
+];
 //--- Cron Jobs --------
 export const cronJobs = new Map();
 
@@ -50,7 +56,7 @@ cronJobs.set(
     null, // onComplete
     cronTab.checker?.autoStart || false, // automatisch starten
     process.env.TZ || "Europe/Berlin", // timeZone
-    "Checker 22"
+    "Checker bis 22 Tage"
   ))
 
 cronJobs.set(
@@ -61,18 +67,29 @@ cronJobs.set(
     null, // onComplete
     cronTab.fullChecker?.autoStart || false, // automatisch starten
     process.env.TZ || "Europe/Berlin", // timeZone
-    "Checker 999"
+    "Checker bis 999 Tage"
   ))
 
 cronJobs.set(
   "query",
   new CronJob(
     cronTab.query?.cronTime || "0 0 1 1 0", // cronTime
-    queryJob, // onTick
+    queryMinJob, // onTick
     null, // onComplete
     cronTab.query?.autoStart || false, // automatisch starten
     process.env.TZ || "Europe/Berlin", // timeZone
-    "Query"
+    "Online-Abfrage (min)"
+  ))
+
+cronJobs.set(
+  "queryMax",
+  new CronJob(
+    cronTab.query?.cronTime || "0 0 1 1 0", // cronTime
+    queryMaxJob, // onTick
+    null, // onComplete
+    cronTab.query?.autoStart || false, // automatisch starten
+    process.env.TZ || "Europe/Berlin", // timeZone
+    "Online-Abfrage (max)"
   ))
 
 cronJobs.set(
@@ -132,11 +149,11 @@ async function checkerJob(days, kennungen) {        //Einzelprüfungen
 function checkerJob22() { checkerJob(22, ["HESS", "DÜS", "THÜR", "GOET"]) }
 function checkerJob999() { checkerJob(999, ["HESS", "DÜS", "THÜR", "GOET"]) }
 
-async function queryJob() {
+async function queryJob(targets) {
   log.info("Cron: queryJob starting ....")
   let success = new Set();
 
-  for (const target of queryTargets) {
+  for (const target of targets) {
     log.info('Cron: queryJob:', target.kennung);
 
     if (!success.has(target.kennung)) {
@@ -169,6 +186,8 @@ async function queryJob() {
 
   log.info("Cron: queryJob finished.", success)
 }
+function queryMinJob() { queryJob(queryTargetsMin) }
+function queryMaxJob() { queryJob(queryTargetsMax) }
 
 async function backupJob() {
   try {

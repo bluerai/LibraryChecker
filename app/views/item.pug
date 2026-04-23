@@ -34,7 +34,7 @@
               input#mediaType.form-control.text-center(type="text" readonly class=item.listType || '' style="min-width: 80px"
                 title="Media-Typ" value=data.displayListType)
 
-          .row.pb-1
+          //-.row.pb-1
             .col-6
               label(for="received") Im Bestand seit:
             .col-6
@@ -51,15 +51,13 @@
               else
                 input#datum.form-control.text-center.border-primary(type="text" readonly value=item.datum)
 
-          .row.pb-1
-            .col-6
-              label(for="lastUpdated") Letzte Aktualisierung:
-            .col-6
-              input#lastUpdated.form-control.text-center.border-primary(type="text" readonly value=(formatDate(item.lastUpdated) || "NA"))
-
           .row.pb-0
             .col-6
-                label(for="searchString") Abfragestring:
+              .form-check.form-switch
+                label.form-check-label.small.mb-0.me-3(for="priobox") Priorität
+                input#priobox.form-check-input.border-primary(type="checkbox" 
+                  onChange=`changeItem('${item._id}', '${data.targetId}')` checked=item.prio)
+
             .col-6
               .text-end
                 span#searchStringfeedback.me-2.small.text-primary
@@ -71,6 +69,15 @@
               textarea#searchString.form-control.border-primary(name="searchString" rows="2"
                 onChange=`changeItem('${item._id}', '${data.targetId}')`
               )= item.searchString   
+              
+          .row.pb-1
+            .col-6
+              p.small Im Bestand seit: 
+                span#received.text-nowrap= item.received
+            .col-6
+              .text-end
+                p.small Geändert: 
+                  span#lastUpdated.text-nowrap= formatDate(item.lastUpdated)
 
           #buttonbar
             .d-flex.justify-content-center

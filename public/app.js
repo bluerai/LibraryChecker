@@ -306,10 +306,10 @@ async function openItemMenu(item, targetId) {
       CUR_ITEM = item;
       TARGET_ID = targetId;
     } else {
-      showToast('getList: ' + data.message, 'warning');
+      showToast('getList: data error: ' + data.message, 'warning');
     }
   } catch (error) {
-    showToast('getList Fehler: ' + error.message, 'warning');
+    showToast('getList js error: ' + error.message, 'warning');
   }
 }
 
@@ -353,8 +353,9 @@ async function updateItem(item, targetId) {  // Menu - aktualisieren
         <input class="form-control text-center statusCell me-2" id="status" type="text" 
         style="width:40px" readonly="readonly" title="Status" value="${data.options.item.status}">`
       document.getElementById('datum').value = data.options.item.datum;
-      document.getElementById('received').value = data.options.item.received;
-      document.getElementById('lastUpdated').value = formatDate(data.options.item.lastUpdated);
+      document.getElementById('received').innerHTML = data.options.item.received;
+      document.getElementById('lastUpdated').innerHTML = formatDate(data.options.item.lastUpdated);
+      document.getElementById('priobox').checked = data.options.item.prio;
       document.getElementById('searchString').value = data.options.item.searchString;
 
       const message = data.options.message || "Keine Änderung der Verfügbarkeit";
@@ -363,12 +364,12 @@ async function updateItem(item, targetId) {  // Menu - aktualisieren
       RELOAD_NEEDED = true;
 
     } else {
-      showToast('updateItem: ' + data.error, 'warning');
+      showToast('updateItem: data error: ' + data.error, 'warning');
     }
 
 
   } catch (error) {
-    showToast('updateItem Fehler: ' + error.message, 'warning');
+    showToast('updateItem: js error: ' + error.message, 'warning');
   } finally {
     statusmsg.style.display = 'none';
   }
@@ -417,40 +418,46 @@ async function importItem(item, targetId, event) {  // Menu - import
       statusmsg.style.display = 'block';
 
     } else {
-      showToast('importItem: ' + data.message, 'warning');
+      showToast('importItem: data error: ' + data.message, 'warning');
     }
     statusmsg.style.display = 'none';
 
   } catch (error) {
-    showToast('importItem Fehler: ' + error.message, 'warning');
+    showToast('importItem js error: ' + error.message, 'warning');
   }
 }
 
 async function changeItem(itemId, targetId) {
   try {
     if (!confirm("Änderung speichern?")) {
+      document.getElementById('priobox').checked = CUR_ITEM.prio;
       document.getElementById('searchString').value = CUR_ITEM.searchString;
       document.getElementById('datum').value = CUR_ITEM.datum;
       return;
     }
 
+    const prio = document.getElementById('priobox').checked;
     const searchString = document.getElementById('searchString').value;
     const datum = document.getElementById('datum').value;
 
     const result = await fetch('/change', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
-      body: `{ "itemId": "${itemId}", "searchString": "${searchString}", "datum": "${datum}", "targetId": "${targetId}" }`
+      body: `{ "itemId": "${itemId}", "searchString": "${searchString}", "prio": ${prio}, "datum": "${datum}", "targetId": "${targetId}" }`
     });
 
     const data = await result.json();
     if (result.ok) {
+      CUR_ITEM.prio = document.getElementById('priobox').checked;
+      CUR_ITEM.searchString = document.getElementById('searchString').value;
+      CUR_ITEM.datum = document.getElementById('datum').value;
       document.getElementById(targetId).outerHTML = data.html;
+
     } else {
-      showToast('importItem: ' + data.message, 'warning');
+      showToast('importItem: data error' + data.message, 'warning');
     }
   } catch (error) {
-    showToast('importItem Fehler: ' + error.message, 'warning');
+    showToast('importItem js error: ' + error.message, 'warning');
   }
 }
 
@@ -490,10 +497,10 @@ async function setItemDone(itemId, targetId, event) {
         document.getElementById('header_panel').style.display = 'block';
         document.getElementById('table_container').style.display = 'block';
       } else {
-        showToast('setItemDone: ' + data.message, 'warning');
+        showToast('setItemDone: data error: ' + data.message, 'warning');
       }
     } catch (error) {
-      showToast('setItemDone Fehler: ' + error.message, 'warning');
+      showToast('setItemDone js error: ' + error.message, 'warning');
     }
   }
 }
@@ -524,10 +531,10 @@ async function setItemReserved(itemId, targetId) {
       document.getElementById('table_container').style.display = 'block';
 
     } else {
-      showToast('setItemReserved: ' + data.message, 'warning');
+      showToast('setItemReserved: data error: ' + data.message, 'warning');
     }
   } catch (error) {
-    showToast('setItemReserved Fehler: ' + error.message, 'warning');
+    showToast('setItemReserved: js error: ' + error.message, 'warning');
   }
 }
 
@@ -555,10 +562,10 @@ async function setItemActive(itemId, targetId) {
       document.getElementById('header_panel').style.display = 'block';
       document.getElementById('table_container').style.display = 'block';
     } else {
-      showToast('setItemActive: ' + data.message, 'warning');
+      showToast('setItemActive: data error: ' + data.message, 'warning');
     }
   } catch (error) {
-    showToast('setItemActive Fehler: ' + error.message, 'warning');
+    showToast('setItemActive: js error: ' + error.message, 'warning');
   }
 }
 
@@ -589,10 +596,10 @@ async function deleteItem(itemId, searchString, targetId, event) {
         document.getElementById('header_panel').style.display = 'block';
         document.getElementById('table_container').style.display = 'block';
       } else {
-        showToast('deleteItem: ' + data.message, 'warning');
+        showToast('deleteItem: data error: ' + data.message, 'warning');
       }
     } catch (error) {
-      showToast('deleteItem Fehler: ' + error.message, 'warning');
+      showToast('deleteItem: js error: ' + error.message, 'warning');
     }
   }
 }

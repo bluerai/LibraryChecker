@@ -1,6 +1,5 @@
 FROM node:lts-alpine3.22
 RUN apk add tzdata
-RUN apk add curl
 
 USER node
 WORKDIR /home/node

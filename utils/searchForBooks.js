@@ -141,7 +141,7 @@ export async function checkOnleihe(item0, limit = 1) {
 
   else return [];
 
-  log.debug("checkOnleihe url:", url);
+  log.debug("checkOnleihe: url:", url);
 
   const res = await fetch(url, {
     method: "POST",
@@ -183,6 +183,10 @@ export async function checkOnleihe(item0, limit = 1) {
     }
     const itemSearchString = `${(author) ? author + "; " : ""}${title}${searchSpec}`;
 
+    console.log("itemSearchString: " , itemSearchString);
+    console.log("item0.searchString: ", item0.searchString);
+    console.log("containsAllFragments: ", containsAllFragments(itemSearchString, item0.searchString));
+
     if (containsAllFragments(itemSearchString, item0.searchString)) {
 
       const mediaData = {
@@ -207,6 +211,8 @@ export async function checkOnleihe(item0, limit = 1) {
       if (mediaData.mediaId && mediaData.mediaId.length > 12) result.mediaId = mediaData.mediaId;
 
       results.push(result);
+
+      if (results.length >= limit) { log.debug("checkOnleihe: results.length: limit reached: ", results.length ); break;}
     }
   }
 
