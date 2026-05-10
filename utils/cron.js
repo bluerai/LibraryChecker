@@ -84,7 +84,7 @@ cronJobs.set(
 cronJobs.set(
   "queryMax",
   new CronJob(
-    cronTab.query?.cronTime || "0 0 1 1 0", // cronTime
+    cronTab.queryMax?.cronTime || "0 0 1 1 0", // cronTime
     queryMaxJob, // onTick
     null, // onComplete
     cronTab.query?.autoStart || false, // automatisch starten
@@ -163,10 +163,10 @@ async function queryJob(targets) {
         log.debug('Cron: queryJob:', target.kennung, result.succes);
 
         if (result.success) {
-          if (result.available !== 0)
-            pushover.sysinfo(result.success, `Online-Abfrage ${target.kennung}`);
-          else
+          if (result.available === 0 && result.new === 0)
             pushover.sysnote(result.success, `Online-Abfrage ${target.kennung}`);
+          else
+            pushover.sysinfo(result.success, `Online-Abfrage ${target.kennung}`);
 
           success.add(target.kennung);
         }

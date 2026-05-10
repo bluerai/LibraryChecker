@@ -183,10 +183,6 @@ export async function checkOnleihe(item0, limit = 1) {
     }
     const itemSearchString = `${(author) ? author + "; " : ""}${title}${searchSpec}`;
 
-    console.log("itemSearchString: " , itemSearchString);
-    console.log("item0.searchString: ", item0.searchString);
-    console.log("containsAllFragments: ", containsAllFragments(itemSearchString, item0.searchString));
-
     if (containsAllFragments(itemSearchString, item0.searchString)) {
 
       const mediaData = {

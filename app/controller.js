@@ -215,14 +215,16 @@ export async function importData(kennung, limit) {
   log.debug("importData: availableCount=", availableCount);
 
   let message;
+  let newCount=0;
   if (results && results.length > 0) {
     const { resultCounts, datumChangedCount } = await upsertItems(results);
+    newCount = resultCounts?.upsertedCount;
     message = `${kennung}: ${queryData.length} Bücher, neu: ${resultCounts?.upsertedCount}, verfügbar: ${availableCount}, aktualisiert: ${resultCounts?.modifiedCount}, neues Datum: ${datumChangedCount}`
   } else {
     message = `${kennung}: ${queryData.length} Bücher, neu: 0, verfügbar: 0, aktualisiert: 0, neues Datum: 0`
   }
 
-  return ({ available: availableCount, success: message });
+  return ({ available: availableCount, new: newCount, success: message });
 }
 
 export async function importAction(req, res) {

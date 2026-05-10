@@ -70,9 +70,13 @@ export class BackupService {
 
       // Nur letzten 7 Backups behalten
       const toDelete = backupFiles.slice(7);
+
+      const sevenDaysAgo = Date.now() - 1000 * 60 * 60 * 24 * 7;
+      //nur löschen, wenn älter als 7 Tage
       await Promise.all(
-        toDelete.map(file => fs.unlink(file.path).catch(log.error))
+        toDelete.map(file => { if (file.time < sevenDaysAgo) fs.unlink(file.path).catch(log.error) })
       );
+
     } catch (error) {
       log.error('Backup cleanup error:', error);
       throw error;
