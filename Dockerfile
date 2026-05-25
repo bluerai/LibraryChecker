@@ -1,4 +1,4 @@
-FROM node:lts-alpine3.22
+FROM node:lts-alpine3.23
 RUN apk add tzdata
 
 USER node
@@ -14,10 +14,11 @@ VOLUME /home/node/data
 ENV HTTP_PORT=80
 ENV TZ=Europe/Berlin
 ENV CHECKLIB_DATA=/home/node/data
-ENV CASSIS_REMOTE_ADR=https://14029.meine-homematic.de:8014/app/search/
+ENV CASSIS_REMOTE_ADR=http://192.168.178.143:8084/app/search/
 
 ENV LOGLEVEL=info
 
-HEALTHCHECK --interval=60m --timeout=5s --retries=3 CMD ["sh", "healthcheck.sh"]
+HEALTHCHECK --interval=50m --timeout=5s --start-period=15s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:80/api/health', (r) => {r.statusCode === 200 ? process.exit(0) : process.exit(1)})"
 
 CMD [ "node", "server.js" ]

@@ -7,6 +7,7 @@ import os from 'os';
 import * as model from './app/model.js';
 import router from './app/router.js';
 import backupRouter from './backup/router.js';
+import { pushover } from './utils/pushover.js';
 import { log } from './utils/log.js';
 import { verifyAction, loginAction, protect } from './auth/index.js';
 
@@ -115,15 +116,16 @@ async function healthAction(request, response) {
     //log.debug("healthAction");
     const count = await model.countItems();
 
-    log.debug("healthAction: " + request.protocol + "-Server still healthy!");
-    response.json({ healthy: true, count });
+    log.debug(`healthAction: ${request.protocol}-Server still healthy! (${count})`);
+    response.status(200).json({ healthy: true, count });
   }
   catch (error) {
     const message = "CheckLib: Error on " + request.protocol + "-Server: " + error.message;
     log.error(message);
+    pushover.syserror(message, "UNHEALTHY: Library Checker");
     if (error.stack) log.debug(error.stack);
     if (response) {
-      response.json({ healthy: false, error: error.message });
+      response.status(500).json({ healthy: false, error: error.message });
     }
   }
 }

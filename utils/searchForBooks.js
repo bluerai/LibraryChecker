@@ -9,7 +9,6 @@ export function getToday() {
 }
 
 export async function checkCassis(item) {
-  log.debug(`checkCassis: ${item.searchString}`)
   const url = `http://${cassisHost}/api/count?search=${encodeURIComponent(item.searchString)}`;
 
   let result;
@@ -30,6 +29,7 @@ export async function checkCassis(item) {
   const data = await result.json();
 
   if (data.count > 0) {
+    log.debug(` - found in Cassis: ${item.searchString}`)
     return { count: data.count, datum: getToday(), status: "^", listType: 'donelist' }
   } else
     return null;
@@ -86,13 +86,15 @@ export async function searchCassis(searchString) {
 }
 
 export async function checkDone(searchString) {
-  log.debug(`checkDone: ${searchString}`);
-  return await findItemDone(searchString);
+  const result = await findItemDone(searchString)
+  if (result) log.debug(` - found in donelist: ${searchString}`);
+  return result;
 }
 
 export async function checkReserved(kennung, searchString) {
-  log.debug(`checkReserved: ${searchString}`);
-  return await findItemReserved(kennung, searchString);
+  const result = await findItemReserved(kennung, searchString);
+  if (result) log.debug(` - found in reservations: ${searchString}`);
+  return result;
 }
 
 // Normalisierung: Kleinbuchstaben, Sonderzeichen durch Leerzeichen ersetzen
@@ -134,7 +136,7 @@ export async function checkOnleihe(item0, limit = 1) {
     url = ((limit !== 1) || !(item0.mediaId)) ?
       `http://${scraperHost}/search` :
       `http://${scraperHost}/details`;
-    //(['ePaper', 'eMagazine'].includes(item0.mediaType)) || 
+  //(['ePaper', 'eMagazine'].includes(item0.mediaType)) || 
 
   else if (['THÜR', 'GOET'].includes(item0.kennung))
     url = `http://${scraperHost}/search2`
@@ -208,11 +210,11 @@ export async function checkOnleihe(item0, limit = 1) {
 
       results.push(result);
 
-      if (results.length >= limit) { log.debug("checkOnleihe: results.length: limit reached: ", results.length ); break;}
+      if (results.length >= limit) { log.debug("checkOnleihe: results.length: limit reached: ", results.length); break; }
     }
   }
 
-  log.silly("checkOnleihe results:",results);
+  log.silly("checkOnleihe results:", results);
 
   return results;
 
@@ -297,14 +299,19 @@ export async function processImportedData(kennung, data) {
           donelistCount++
         } else {
           if (isAvailable) {
+            log.debug(` - now available: ${searchString}`);
             status = "*";  // ausleihbar und jetzt verfügbar
             datum = today;
             availableCount++;
           } else {
-            if (!datum || datum === "") 
+            if (!datum || datum === "") {
+              log.debug(` - data error: ${searchString}`);
               status = "+"    //fehlerhaft: nicht verfügbar, aber kein Datum 
-            else 
+            }
+            else {
+              log.debug(` - to be waited for: ${searchString}`);
               status = "=";    // ausleihbar, jetzt aber nicht verfügbar
+            }
             watchListCount++
           }
           listType = 'watchlist';
