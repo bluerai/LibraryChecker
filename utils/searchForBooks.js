@@ -156,7 +156,7 @@ export async function checkOnleihe(item0, limit = 1) {
   if (data.length == 0) return data;
 
   log.info('checkOnleihe: data.length=', data.length);
-  log.silly('checkOnleihe: data=', data);
+  log.debug('checkOnleihe: data=', data);
 
   let results = [];
 
@@ -165,14 +165,18 @@ export async function checkOnleihe(item0, limit = 1) {
   for (let index = 0; index < data.length; index++) {
     const item = data[index];
     let available = item.datum;
+    let isAvailable = item.isAvailable;
 
     let status = "";
 
-    if (available) {
-      status = "=";   //ausgeliehen, vormerkbar
-    } else {
+    if (isAvailable) {
       available = today;
       status = "*";    //jetzt ausleihbar
+    } else {
+      if (available == "?")
+        status = "+";   //Buch vorhanden, aber nicht verfügbar
+      else
+        status = "=";   //ausgeliehen, vormerkbar
     }
 
     const author = item.author?.replaceAll(/[\n ]+/g, " ");  //ggf. mehrere Autoren!
