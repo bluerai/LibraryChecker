@@ -27,5 +27,9 @@
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
+  },
+  "allowScripts": {
+    "argon2@0.43.1": true,
+    "fsevents@2.3.3": true
   }
 }
