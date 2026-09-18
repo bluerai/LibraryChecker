@@ -129,7 +129,7 @@ function containsAllFragments(itemSearchString, searchString) {
 }
 
 export async function checkOnleihe(item0, limit = 1) {
-  log.info('checkOnleihe:', item0.kennung, item0.searchString, "mediaId:", item0.mediaId, 'Limit:', limit);
+  log.info('checkOnleihe:', item0.kennung, item0.searchString, item0.unselectString, "mediaId:", item0.mediaId, 'Limit:', limit);
 
   let url;
   if (['HESS', 'DÜS'].includes(item0.kennung))
@@ -156,7 +156,7 @@ export async function checkOnleihe(item0, limit = 1) {
   if (data.length == 0) return data;
 
   log.info('checkOnleihe: data.length=', data.length);
-  log.debug('checkOnleihe: data=', data);
+  log.silly('checkOnleihe: data=', data);
 
   let results = [];
 

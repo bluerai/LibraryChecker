@@ -215,7 +215,7 @@ export async function importData(kennung, limit) {
   log.debug("importData: availableCount=", availableCount);
 
   let message;
-  let newCount=0;
+  let newCount = 0;
   if (results && results.length > 0) {
     const { resultCounts, datumChangedCount } = await upsertItems(results);
     newCount = resultCounts?.upsertedCount;
@@ -301,7 +301,7 @@ export async function updateItemAction(req, res) {
       return res.status(404).json({ message: 'updateItemAction: item not saved' });
     }
 
- 
+
 
     let message;
 
@@ -453,8 +453,8 @@ async function prepareItem(item) {
 
 export async function fullSearchAction(req, res) {
   try {
-    const { searchString, mediaType, kennungen } = req.body;
-    log.info(`fullSearchAction: searchString=${searchString}, mediaType=${mediaType}, kennungen=${kennungen}`);
+    const { searchString, unselectString, mediaType, kennungen } = req.body;
+    log.info(`fullSearchAction: searchString=${searchString}, unselectString=${unselectString}, mediaType=${mediaType}, kennungen=${kennungen}`);
 
     const limit = 40; //max Anzahl von Ergebnissen pro Quelle
 
@@ -468,7 +468,7 @@ export async function fullSearchAction(req, res) {
         log.debug('CASSIS', results0.length);
 
       } else {
-        results0 = await checkOnleihe({ kennung, searchString, mediaType }, limit);
+        results0 = await checkOnleihe({ searchString, unselectString, mediaType, kennung }, limit);
         results0 = results0.filter((item) => (item.status !== "!"));
         log.debug(kennung, results0.length);
 
@@ -476,7 +476,11 @@ export async function fullSearchAction(req, res) {
       results = results.concat(results0);
     }
 
-    let preparedResults = (await Promise.all(results = results.map(prepareItem))).sort(sortResults);
+    let preparedResults = (await Promise.all(results = results.map(prepareItem)))
+      .filter(item => (unselectString == "") || !item.searchString.toLocaleLowerCase().includes(unselectString))
+      .sort(sortResults);
+
+    log.silly("preparedResults:", preparedResults)
 
     res.render(join(import.meta.dirname, 'views', 'resultlist'), { results: preparedResults }, function (err, html) {
       if (err) {
@@ -796,10 +800,10 @@ export async function cronAction(req, res) {
 
 export async function upsertSearchItemAction(req, res) {
   try {
-    const { searchString, mediaType, kennungen, targetDate } = req.body;
+    const { searchString, unselectString, mediaType, kennungen, targetDate } = req.body;
     log.info(`upsertSearchItemAction: searchString = ${searchString}, mediaType = ${mediaType}, kennungen = ${kennungen}, targetDate = ${targetDate} `);
 
-    let item = { searchString, mediaType, kennungen, targetDate, available: [] };
+    let item = { searchString, unselectString, mediaType, kennungen, targetDate, available: [] };
 
     await upsertSearchItem(item);
 
@@ -896,7 +900,7 @@ export async function updateSearchItems(items) {
     for (const kennung of item.kennungen) {
       if ((item.available.indexOf(kennung) === -1)) {
 
-        const results = await checkOnleihe({ kennung, searchString: item.searchString, mediaType: item.mediaType }, limit);
+        const results = await checkOnleihe({ kennung, searchString: item.searchString, unselectString: item.unselectString, mediaType: item.mediaType }, limit);
 
         for (const result of results) {
           if (result.status !== "!") {

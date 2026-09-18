@@ -91,7 +91,7 @@ html(lang="de")
                     .row.d-flex.justify-content-center
                       .col-4
                         .text-start
-                          label.form-label(for="fullSearchString") Suchstring:
+                          label.form-label(for="fullSearchString") Suche nach:
                       .col-8
                         .text-end
                           span#fullSearchStringfeedback.me-2.small.text-primary
@@ -100,12 +100,17 @@ html(lang="de")
 
                     .row
                       .col-12
-                        textarea#fullSearchString.mb-2.form-control.border-primary(rows="2" placeholder="Suchstring eingeben..." required)
+                        textarea#fullSearchString.mb-2.form-control.border-primary(rows="2" placeholder="Suchwörter eingeben..." required)
+
+                    .row.d-flex.justify-content-center.mb-4
+                      .col-3
+                        .text-start
+                          label.form-label(for="unselectString") enthält nicht:
+                      .col-9
+                        input#unselectString.form-control.border-primary(type="text" placeholder="Suchwort eingeben...")     
 
                     .row.align-items-center
-                      .col-2
-
-                      .col-8.d-flex.justify-content-center       
+                      .col-12.d-flex.justify-content-center       
                         button.btn.btn-sm.btn-primary(type="button" style="width: 200px" onclick="fullSearch()") Suchen
 
                 .card-footer.statusmsg.text-primary(style="display: none")

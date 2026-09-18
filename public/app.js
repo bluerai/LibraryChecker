@@ -631,6 +631,7 @@ function toggleTab(tabId, force) {
     if (CUR_ITEM !== undefined) {
       const item = CUR_ITEM;
       document.getElementById('fullSearchString').value = item.searchString;
+      document.getElementById('unselectString').value = item.unselectString || "";
       document.getElementById("mediaType").value = item.mediaType;
 
       /* const kennungen = (item.kennungen) ? item.kennungen : [item.kennung];
@@ -647,8 +648,6 @@ function toggleTab(tabId, force) {
     reloadList();
   }
 
-  /*   const fullSearchString = document.getElementById('fullSearchString');
-    if (fullSearchString) fullSearchString.focus(); */
 }
 
 function openSearchTab(item, enableReturn) {
@@ -657,6 +656,7 @@ function openSearchTab(item, enableReturn) {
   toggleTab(tabId, 'block');
 
   document.getElementById('fullSearchString').value = item.searchString;
+  document.getElementById('unselectString').value = item.unselectString || "";
   document.getElementById("mediaType").value = item.mediaType;
 
   if (enableReturn) {
@@ -686,6 +686,7 @@ function backToMenuItem() {
 
 function newSearchTab() {
   document.getElementById('fullSearchString').value = '';
+  document.getElementById('unselectString').value = '';
   document.getElementById("mediaType").value = 'eBook';
   document.getElementById("targetDate").value = '';
   resetKennungen();
@@ -982,7 +983,7 @@ async function fullSearch() { //Suche
     showToast('Bitte einen Suchstring eingeben', 'info');
     return;
   }
-
+  const unselectString = document.getElementById('unselectString').value?.trim().toLowerCase() || "";
   const mediaType = document.getElementById('mediaType').value;
   const kennungen = getKennungen();
   kennungen.push('CASSIS');  //auch CASSIS einfügen
@@ -995,7 +996,7 @@ async function fullSearch() { //Suche
     const result = await fetch('/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
-      body: JSON.stringify({ searchString, mediaType, kennungen })
+      body: JSON.stringify({ searchString, unselectString, mediaType, kennungen })
     });
 
     statusmsg.style.display = 'none';
@@ -1041,6 +1042,7 @@ async function saveSearchItem() {
     showToast('Bitte den Suchstring eingeben', 'info');
     return;
   }
+  const unselectString = document.getElementById('unselectString').value.trim() || "";
   const mediaType = document.getElementById('mediaType').value;
   const kennungen = getKennungen();
   const targetDate = document.getElementById('targetDate').value;
@@ -1052,7 +1054,7 @@ async function saveSearchItem() {
     const result = await fetch('/waitlist/upsert', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
-      body: JSON.stringify({ searchString, mediaType, kennungen, targetDate })
+      body: JSON.stringify({ searchString, unselectString, mediaType, kennungen, targetDate })
     });
 
     const data = await result.json();
