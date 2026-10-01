@@ -55,7 +55,7 @@ const mediaTypes = {
 export const httpRoot = {
   'DÜS': 'https://duesseldorf.onleihe.de',
   'HESS': 'https://hessen.onleihe.de',
-  'GOET': 'https://www.onleihe.de/goethe-institut/frontend/',
+  'GOET': 'https://goethe-institut.onleihe.de',
   'THÜR': 'https://www.onleihe.de/thuebibnet/frontend/'
 };
 
@@ -688,7 +688,7 @@ export async function itemAction(req, res) {
     let cassisUrl = cassisRemoteAdr + encodeURIComponent(item.searchString);
 
     let onlUrl;
-    if (['HESS', 'DÜS'].includes(item.kennung)) {
+    if (['HESS', 'DÜS', 'GOET'].includes(item.kennung)) {
       if (item.mediaId)
         onlUrl = `${httpRoot[item.kennung]}/search/mediadetail?productId=${item.mediaId}`
     } else {

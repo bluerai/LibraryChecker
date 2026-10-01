@@ -132,13 +132,13 @@ export async function checkOnleihe(item0, limit = 1) {
   log.info('checkOnleihe:', item0.kennung, item0.searchString, item0.unselectString, "mediaId:", item0.mediaId, 'Limit:', limit);
 
   let url;
-  if (['HESS', 'DÜS'].includes(item0.kennung))
+  if (['HESS', 'DÜS', 'GOET'].includes(item0.kennung))
     url = ((limit !== 1) || !(item0.mediaId)) ?
       `http://${scraperHost}/search` :
       `http://${scraperHost}/details`;
   //(['ePaper', 'eMagazine'].includes(item0.mediaType)) || 
 
-  else if (['THÜR', 'GOET'].includes(item0.kennung))
+  else if (['THÜR'].includes(item0.kennung))
     url = `http://${scraperHost}/search2`
 
   else return [];
@@ -229,10 +229,10 @@ export async function queryOnleihe(kennung, limit) {
 
   let url;
 
-  if (['HESS', 'DÜS'].includes(kennung))
+  if (['HESS', 'DÜS', 'GOET'].includes(kennung))
     url = `http://${scraperHost}/querydata/${encodeURIComponent(kennung)}/${limit}`;
 
-  else if (['THÜR', 'GOET'].includes(kennung))
+  else if (['THÜR'].includes(kennung))
     url = `http://${scraperHost}/list2/${encodeURIComponent(kennung)}/${limit}`;
 
   else return [];
