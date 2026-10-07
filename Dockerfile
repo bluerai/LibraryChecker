@@ -14,7 +14,6 @@ VOLUME /home/node/data
 ENV HTTP_PORT=80
 ENV TZ=Europe/Berlin
 ENV CHECKLIB_DATA=/home/node/data
-ENV CASSIS_REMOTE_ADR=http://192.168.178.143:8084/app/search/
 
 ENV LOGLEVEL=info
 

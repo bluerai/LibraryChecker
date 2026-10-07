@@ -219,7 +219,7 @@ export async function importData(kennung, limit) {
   if (results && results.length > 0) {
     const { resultCounts, datumChangedCount } = await upsertItems(results);
     newCount = resultCounts?.upsertedCount;
-    message = `${kennung}: ${queryData.length} Bücher, ${(newCount !== 0) ? ('neu im Bestand: ' + newCount) : ''}, verfügbar: ${availableCount}, aktualisiert: ${resultCounts?.modifiedCount}, neues Datum: ${datumChangedCount}`
+    message = `${kennung}: ${queryData.length} Bücher${(newCount !== 0) ? (', neu im Bestand: ' + newCount) : ''}, verfügbar: ${availableCount}, aktualisiert: ${resultCounts?.modifiedCount}, neues Datum: ${datumChangedCount}`
   } else {
     message = `${kennung}: ${queryData.length} Bücher, verfügbar: 0, aktualisiert: 0, neues Datum: 0`
   }

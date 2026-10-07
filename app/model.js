@@ -1,7 +1,7 @@
 import { MongoClient, ObjectId } from 'mongodb';
 import { log } from '../utils/log.js';
 
-const mongoUrl = process.env.CHECKLIBDB_URL || 'mongodb://localhost:27017';
+const mongoUrl = process.env.CHECKLIBDB_URL;
 const dbName = process.env.CHECKLIBDB_NAME || 'library_info';
 const dataCollName = process.env.CHECKLIBDB_COLLNAME || 'data';
 const searchItemsCollName = process.env.CHECKLIBDB_SEARCHITEMS_COLLNAME || 'searchItems';

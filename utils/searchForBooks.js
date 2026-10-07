@@ -1,15 +1,15 @@
 import { findItemDone, findItemReserved } from '../app/model.js';
 import { log } from './log.js';
 
-const cassisHost = process.env.CASSIS_HOST;
-const scraperHost = process.env.SCRAPER_HOST;
+const cassisUrl = process.env.CASSIS_URL;
+const scraperUrl = process.env.SCRAPER_URL;
 
 export function getToday() {
   return new Date().toISOString().split('T')[0]
 }
 
 export async function checkCassis(item) {
-  const url = `http://${cassisHost}/api/count?search=${encodeURIComponent(item.searchString)}`;
+  const url = `${cassisUrl}/api/count?search=${encodeURIComponent(item.searchString)}`;
 
   let result;
   try {
@@ -39,7 +39,7 @@ export async function searchCassis(searchString) {
   log.debug("searchCassis searchString=", searchString)
 
   searchString = searchString.split(' [')[0];
-  const url = 'http://' + cassisHost + '/api/search?search=' + encodeURIComponent(searchString);
+  const url = 'http://' + cassisUrl + '/api/search?search=' + encodeURIComponent(searchString);
   log.debug(`searchCassis: url=${url}`);
 
   let result;
@@ -134,12 +134,12 @@ export async function checkOnleihe(item0, limit = 1) {
   let url;
   if (['HESS', 'DÜS', 'GOET'].includes(item0.kennung))
     url = ((limit !== 1) || !(item0.mediaId)) ?
-      `http://${scraperHost}/search` :
-      `http://${scraperHost}/details`;
+      `${scraperUrl}/search` :
+      `${scraperUrl}/details`;
   //(['ePaper', 'eMagazine'].includes(item0.mediaType)) || 
 
   else if (['THÜR'].includes(item0.kennung))
-    url = `http://${scraperHost}/search2`
+    url = `${scraperUrl}/search2`
 
   else return [];
 
@@ -230,10 +230,10 @@ export async function queryOnleihe(kennung, limit) {
   let url;
 
   if (['HESS', 'DÜS', 'GOET'].includes(kennung))
-    url = `http://${scraperHost}/querydata/${encodeURIComponent(kennung)}/${limit}`;
+    url = `${scraperUrl}/querydata/${encodeURIComponent(kennung)}/${limit}`;
 
   else if (['THÜR'].includes(kennung))
-    url = `http://${scraperHost}/list2/${encodeURIComponent(kennung)}/${limit}`;
+    url = `${scraperUrl}/list2/${encodeURIComponent(kennung)}/${limit}`;
 
   else return [];
 

@@ -15,8 +15,8 @@ const app = express();
 
 const HTTP_PORT = parseInt(process.env.HTTP_PORT) || 80;
 const HTTPS_PORT = parseInt(process.env.HTTPS_PORT) || 443;
-const KEYFILE = process.env.CHECKLIB_KEYFILE || 'key.pem';
-const CERTFILE = process.env.CHECKLIB_CERTFILE || 'cert.pem';
+const KEYFILE = process.env.CHECKLIB_KEYFILE || 'server.key';
+const CERTFILE = process.env.CHECKLIB_CERTFILE || 'server.crt';
 
 // Konfiguration
 app.set('view engine', 'pug');
@@ -47,18 +47,15 @@ model.connect().catch(err => {
 });
 
 try {
-  const host = process.env.CASSIS_HOST;
-  if (!host) {
-    throw new Error(`Enviroment variable CASSIS_HOST not set.`)
-  }
-  const result = await fetch(`http://${host}/api/health`); //{"healthy":true}
+  const cassisUrl = process.env.CASSIS_URL;
+  const result = await fetch(`${cassisUrl}/api/health`);
   const data = await result.json();
   if (data.healthy)
-    log(`Cassis host ${host} responding correctly.`);
+    log(`Cassis host at "${cassisUrl}".`);
   else
     throw new Error(`Cassis-Server not healthy.`)
 } catch (error) {
-  log.error(`Error accessing Cassis host at ${process.env.CASSIS_HOST}.`);
+  log.error(`Error accessing Cassis host:`, error);
   process.exit(1);
 }
 
