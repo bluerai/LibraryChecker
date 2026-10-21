@@ -11,6 +11,8 @@ let DATA_COLL;
 let SEARCH_COLL;
 let DBCLIENT;
 
+
+
 export async function connect() {
   DBCLIENT = new MongoClient(mongoUrl);
   await DBCLIENT.connect();
@@ -23,6 +25,7 @@ export async function connect() {
   await SEARCH_COLL.createIndex({ searchString: 1 });
 
   log.info(`Database connected: url=${mongoUrl}`);
+  log.info("Datenbankname", dbName);
 }
 
 export async function disconnect() {  //not used

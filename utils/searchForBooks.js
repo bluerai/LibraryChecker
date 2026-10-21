@@ -39,7 +39,7 @@ export async function searchCassis(searchString) {
   log.debug("searchCassis searchString=", searchString)
 
   searchString = searchString.split(' [')[0];
-  const url = 'http://' + cassisUrl + '/api/search?search=' + encodeURIComponent(searchString);
+  const url = cassisUrl + '/api/search?search=' + encodeURIComponent(searchString);
   log.debug(`searchCassis: url=${url}`);
 
   let result;

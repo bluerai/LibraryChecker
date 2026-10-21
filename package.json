@@ -5,8 +5,8 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "docker start mongo8; node --env-file=.env.dev server.js",
-    "dev": "docker start mongo8; nodemon --env-file=.env.dev server.js"
+    "start": "node --env-file=.env.dev server.js",
+    "dev": "nodemon --env-file=.env.dev server.js"
   },
   "dependencies": {
     "argon2": "^0.43.0",
